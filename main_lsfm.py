@@ -8,6 +8,10 @@ from modules.params import PARAM_ENV,PARAM_AGENT
 from modules.experiments import experience
 
 
+import pandas as pd
+import seaborn as sns
+sns.set()
+import matplotlib.pyplot as plt
 
 
 
@@ -26,63 +30,26 @@ data = pd.DataFrame()
 data, agent_Q = experience(env, PARAM_AGENT, agent)
 
 
+# plot
+df = data
 
+fig, axs = plt.subplots(2, 3,figsize=(15, 10))
+plt.figure(figsize=(5, 5))
+sns.lineplot(x="cum_step", y="Avg_loss", data=df, ax = axs[0,0] )
+sns.lineplot(x="cum_step", y="Avg_loss_r", data=df, ax = axs[0,1] )
+sns.lineplot(x="cum_step", y="Avg_loss_N", data=df, ax = axs[0,2] )
+sns.lineplot(x="cum_step", y="Avg_loss_psi", data=df, ax = axs[1,0] )
+plt.show()
 
+eval_step = int(PARAM_AGENT["num_episodes"] - PARAM_AGENT["num_episodes"] /10)
 
-# train
+avg_loss = df.loc[eval_step:,"Avg_loss"].mean()
+avg_loss_r = df.loc[eval_step:,"Avg_loss_r"].mean()
+avg_loss_N = df.loc[eval_step:,"Avg_loss_N"].mean()
+avg_loss_psi = df.loc[eval_step:,"Avg_loss_psi"].mean()
 
-# for _ in range(PARAM_AGENT.num_episodes): 
-        
-#     # prepare for the next trial
-#     sfql.reset()
-#     q.reset()
-    
-#     # next trial
-#     for _ in range(n_tasks):
-        
-#         # define new task
-#         rewards = dict(zip(['1', '2', '3'], list(np.random.uniform(low=-1.0, high=1.0, size=3))))
-#         task = Shapes(maze, rewards)
-        
-#         # solve the task with sfql
-#         print('\nsolving with SFQL')
-#         sfql.add_task(task)
-#         sfql.set_active_task()
-#         for _ in range(n_samples):
-#             sfql.next_sample()
-        
-#         # solve the same task with q
-#         print('\nsolving with QL')
-#         q.next_task(task)
-#         for _ in range(n_samples):
-#             q.next_sample()
-    
-#     # update performance statistics
-#     avg_data_sfql = avg_data_sfql + np.array(sfql.reward_hist) / float(n_trials)
-#     cum_data_sfql = cum_data_sfql + np.array(sfql.cum_reward_hist) / float(n_trials)
-#     avg_data_q = avg_data_q + np.array(q.reward_hist) / float(n_trials)
-#     cum_data_q = cum_data_q + np.array(q.cum_reward_hist) / float(n_trials)
+print("avg_loss", avg_loss)
+print("avg_loss_r", avg_loss_r)
+print("avg_loss_N", avg_loss_N)
+print("avg_loss_psi", avg_loss_psi)
 
-# # plot the cumulative return per trial, averaged 
-# import matplotlib.pyplot as plt
-# plt.figure(figsize=(10, 5))
-# plt.plot(avg_data_sfql, label='SFQL')
-# plt.plot(avg_data_q, label='Q')
-# plt.xlabel('samples')
-# plt.ylabel('cumulative reward')
-# plt.legend()
-# plt.title('Cumulative Training Reward Per Task')
-# plt.savefig('figures/sfql_cumulative_return_per_task.png')
-# plt.show()
-
-# # plot the gross cumulative return, averaged
-# plt.clf()
-# plt.figure(figsize=(5, 5))
-# plt.plot(cum_data_sfql, label='SFQl')
-# plt.plot(cum_data_q, label='Q')
-# plt.xlabel('samples')
-# plt.ylabel('cumulative reward')
-# plt.legend()
-# plt.title('Total Cumulative Training Reward')
-# plt.savefig('figures/sfql_cumulative_return_total.png')
-# plt.show()
