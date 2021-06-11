@@ -1,8 +1,10 @@
 import pandas as pd
-from modules.dqn import Agent_Q
 import numpy as np
 from modules.memory import Memory
+import tensorflow as tf
 
+from modules.dqn import Agent_Q
+from modules.lsfm import Agent
 
 def carac_model(param) : 
     if param["train_LSFM"] : calcul = "LSFM"
@@ -21,24 +23,110 @@ def loss_func(ypred, ytrue) :
     return keras.losses.mean_absolute_error(ypred, ytrue)
     
 
-def simu(env,param_agent,agent_LSFM = None, agent_Q = None) : 
 
+def experience_offline_LSFM(env,param_agent,buffer) : 
     
-    result_compile = []
+    data = pd.DataFrame()
+    
+    for k in range(param_agent["run"]) : 
+        # load LSFM model : 
+    
+        result_compile = []
+        steps = 0
 
+    #     No mask for simple env
+        if env.env_name == "SimpleGrid" : 
+            action_space = np.arange(env.action_space.n)
+            action_no_mask = np.full((env.action_space.n), 1)   
+            possible_action = action_space
+
+        memory = Memory(param_agent["memory"], buffer)
+
+        avg_loss = 0
+        avg_loss_r  = 0
+        avg_loss_N  = 0
+        avg_loss_psi  = 0
+        
+        
+        
+        agent_LSFM = Agent(env, param_agent)
+        model_LSFM = agent_LSFM.model_LSFM
+    
+        for i in range(param_agent["num_steps"]):
+
+            avg_loss = 0
+
+    ### TRANSITION MATRIX :  Get the prediction error of the next latent space
+            loss_phisp1  = 0
+
+
+    #         TRAIN ON BUFFER ONLY 
+            if buffer != None : 
+
+                loss_all = agent_LSFM.train_LSFM(
+                            model_LSFM, 
+                            memory, 
+                            param_agent["filter_done"])
+
+                avg_loss += loss_all[0]
+                avg_loss_r += loss_all[1]
+                avg_loss_N += loss_all[2]
+                avg_loss_psi += loss_all[3]
+
+
+
+                if steps>0 : 
+                    if steps % 200 == 0:
+                        avg_loss /= steps
+                        avg_loss_r /= steps
+                        avg_loss_N /= steps
+                        avg_loss_psi /= steps
+                        loss_phisp1 /= steps
+
+                        result = [k, steps, avg_loss, avg_loss_r, avg_loss_N, avg_loss_psi, loss_phisp1]
+                        print("run: {:03d}, cumul_step: {:06d}, avg loss: {:0.4f}, avg_loss_r: {:0.4f}, avg_loss_N: {:0.4f}, avg_loss_psi: {:0.4f}".format(*result[:-1]))
+
+                        result_compile.append(result)
+
+                steps += 1
+
+
+        data_train_df = pd.DataFrame(result_compile, columns=[ 
+            "run", 
+            "cum_step",
+            "Avg_loss" ,  
+            "Avg_loss_r",  
+            "Avg_loss_N",  
+            "Avg_loss_psi", "loss_phisp1"])
+
+        data_train_df["carac"] = carac_model(param_agent) 
+        data_train_df["run"] = k
+        data = pd.concat([data, data_train_df])          
+    
+    
+    
+    
+    return data, agent_LSFM
+
+
+
+def simu(env,param_agent,agent_LSFM = None, agent_Q = None, buffer = None, buffer_latent = None) : 
+      
+    result_compile = []
     steps = 0
     render = param_agent["render"]
-
     reward_cumul = 0
 
-    action_space = np.arange(env.action_space.n)
-    possible_action = action_space
+#     No mask for simple env
+    if env.env_name == "SimpleGrid" : 
+        action_space = np.arange(env.action_space.n)
+        action_no_mask = np.full((env.action_space.n), 1)   
+        possible_action = action_space
 
     
-    memory = Memory(param_agent["memory"])
-    memory_latent = Memory(param_agent["memory"])
+    memory = Memory(param_agent["memory"], buffer)
+    memory_latent = Memory(param_agent["memory"], buffer_latent)
 
-    
     avg_loss = 0
     avg_loss_r  = 0
     avg_loss_N  = 0
@@ -52,11 +140,8 @@ def simu(env,param_agent,agent_LSFM = None, agent_Q = None) :
         if param_agent["avg_loss_phisp1" ] : 
             agent_LSFM.M_transi(model_LSFM)
         
-
         
-        
-#     model_LSFM_prev= agent_LSFM.model_LSFM_prev
-    if param_agent["train_LSFM"] == False : 
+    if agent_Q != None : 
         model_Q = agent_Q.model
         model_Q_prev = agent_Q.model_prev
     
@@ -76,9 +161,18 @@ def simu(env,param_agent,agent_LSFM = None, agent_Q = None) :
             if render:
                 env.render()
 
+                
+#             -----------------------------
+#             Policy
+#             -----------------------------
             if param_agent["train_LSFM"] : 
                 action, eps = agent_LSFM.choose_action_random()
                 next_state, reward, done, info = env.step(action)
+                
+                phi_prime = agent_LSFM.model_LSFM(next_state.reshape(1,-1))["phi"]
+                next_state_latent = np.array(tf.reshape(phi_prime, phi_prime.shape[-1]))
+                
+                
             else : 
                 if param_agent["train_on_Q_latent"] : 
                     
@@ -113,10 +207,10 @@ def simu(env,param_agent,agent_LSFM = None, agent_Q = None) :
 
                     next_state, reward, done, info = env.step(action)
                     
-                    phi_prime = agent_LSFM.model_LSFM(next_state.reshape(1,-1))["phi"]
-                    next_state_latent = np.array(tf.reshape(phi_prime, phi_prime.shape[-1]))
-                    
-                    
+                    if agent_LSFM!= None : 
+                        phi_prime = agent_LSFM.model_LSFM(next_state.reshape(1,-1))["phi"]
+                        next_state_latent = np.array(tf.reshape(phi_prime, phi_prime.shape[-1]))
+
                     
 ### TRANSITION MATRIX : Get the prediction error of the next latent space
             if param_agent["avg_loss_phisp1"] :                     
@@ -136,10 +230,19 @@ def simu(env,param_agent,agent_LSFM = None, agent_Q = None) :
                 next_state_latent = np.zeros(param_agent["latent_space"])
             
             
+#             -----------------------------
+#             TRAIN
+#             -----------------------------
             
             if param_agent["train"] :
+
                 if param_agent["train_LSFM"] : 
-                    memory.add_sample((state, action, reward, next_state, done))
+
+                    
+                    if buffer == None : 
+                        memory.add_sample((state, action_no_mask, action, reward, next_state, done))
+                    
+                    
                     loss_all = agent_LSFM.train_LSFM(
                         model_LSFM, 
                         memory, 
@@ -151,7 +254,8 @@ def simu(env,param_agent,agent_LSFM = None, agent_Q = None) :
                     avg_loss_psi += loss_all[3]
                 else : 
                     if param_agent["train_on_Q_latent"] : 
-                        memory_latent.add_sample((state_latent, action, reward, next_state_latent, done))
+                        if buffer_latent == None :
+                            memory_latent.add_sample((state_latent,action_no_mask,  action, reward, next_state_latent, done))
 
                         loss = agent_Q.train_Q(
                         model_Q, 
@@ -159,7 +263,7 @@ def simu(env,param_agent,agent_LSFM = None, agent_Q = None) :
                         memory_latent, param_agent["filter_done"])
                         avg_loss += loss
                     else :                 
-                        memory.add_sample((state, action, reward, next_state, done))
+                        memory.add_sample((state,action_no_mask, action, reward, next_state, done))
 
                         loss = agent_Q.train_Q(
                         model_Q, 
@@ -203,9 +307,9 @@ def simu(env,param_agent,agent_LSFM = None, agent_Q = None) :
     return result_compile, memory,memory_latent
     
     
-def experience(environment, param, agent= None, save_model = None) : 
+def experience(environment, param, agent= None, save_model = None, buffer = None, buffer_latent = None) : 
     
-
+    
     data = pd.DataFrame()
     
     for k in range(param["run"]) : 
@@ -217,9 +321,10 @@ def experience(environment, param, agent= None, save_model = None) :
 #                 print("agent_Q_simu", t)
 
         
-        result_compile, memory,memory_latent = simu(environment,param, agent, agent_Q_simu)
+        result_compile, memory,memory_latent = simu(environment,param, agent, agent_Q_simu, buffer=buffer,buffer_latent=buffer_latent )
     
-
+    
+        memory.write("memory.csv")
         data_train_df = pd.DataFrame(result_compile, columns=[ 
         "Episode", 
         "Step", 

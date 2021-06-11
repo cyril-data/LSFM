@@ -4,6 +4,7 @@ from tensorflow import keras
 from tensorflow.keras import layers, Input
 
 class Agent_Q:
+    
         
     def __init__(self, enviroment, param = {}, save_model=None):
         self.param = param
@@ -177,10 +178,13 @@ class Agent_Q:
         
 #        tensor conversion
         states = tf.convert_to_tensor(np.array([val[0] for val in batch]))
-        actions = tf.convert_to_tensor(np.array([val[1] for val in batch]))
-        rewards = tf.convert_to_tensor(np.array([val[2] for val in batch]).astype(np.float32))        
-        next_states = tf.convert_to_tensor(np.array([val[3] for val in batch]))
-        terminate = tf.convert_to_tensor(np.array([val[4] for val in batch]))
+    
+        action_mask = batch[1]
+        actions = tf.convert_to_tensor(np.array([val[2] for val in batch]))
+        rewards = tf.convert_to_tensor(np.array([val[3] for val in batch]).astype(np.float32))        
+        next_states = tf.convert_to_tensor(np.array([(np.zeros(self._state_dim)
+                                 if val[3] is None else val[4]) for val in batch]))
+        terminate = tf.convert_to_tensor(np.array([val[5] for val in batch]))
 
 
         target_Q = self.target_Q(model_Q, 

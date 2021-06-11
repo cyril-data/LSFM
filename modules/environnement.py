@@ -18,7 +18,7 @@ from tensorflow import keras
 
 class custom_env:
 
-    def __init__(self, env_name, param={}):
+    def __init__(self, env_name, param={}, state_dim = None, action_dim=None):
         # Initialize atributes
         self.env_name = env_name    # name of environment
         self.param = param          # dictionarry of environment parameters
@@ -42,11 +42,14 @@ class custom_env:
                 self.param["grid_size"]**2)
             
             self.action_space = gym.spaces.Discrete(4)
+            self._action_dim = self.action_space.n
+            
             
         if (self.env_name.split("_")[0] == "gym"):
             gym_name = "_".join(self.env_name.split("_")[1:])
             self.env = gym.make(gym_name)
             self.action_space = self.env.action_space
+            self._action_dim = self.action_space.n
             if (type(self.env.observation_space) == gym.spaces.discrete.Discrete):
                 self.observation_space = self.env.observation_space
                 self.state_type = "Discrete"
@@ -54,7 +57,16 @@ class custom_env:
             else:
                 self.state_type = "Continue"
 
-        observation = self.reset()
+        if (self.env_name == "custom"):
+            
+            self._action_dim = action_dim
+            self._state_dim = state_dim
+            
+            self.state_type = "custom"
+            observation = np.random.uniform(low=0., high=1., size=(state_dim,))
+            
+        else :            
+            observation = self.reset()
         
         if self.state_type == "Discrete":
             self._state_dim = self.observation_space.n

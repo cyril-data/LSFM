@@ -7,10 +7,11 @@ import numpy as np
 
 
 class Agent:
+    
         
     def __init__(self, enviroment, param={}):
         self.param = param
-        self._action_size = enviroment.action_space.n
+        self._action_size = enviroment._action_dim
         self._state_dim = enviroment._state_dim
         self.dim_latent = self.param["latent_space"]
         self.hidden_dim = int(self.param["latent_space"] * self.param["hidden_dim_ratio"])
@@ -229,20 +230,29 @@ class Agent:
         
     
     def train_LSFM(self, model, memory, filter_done):
+        
+        
         if memory.num_samples < self.batch_size * 3:
-            return [0,0,0,0]
+            return [0,0,0,0,0]
         batch = memory.sample(self.batch_size)
         
         action_space = np.arange(self._action_size)
 #        tensor conversion
         states = tf.convert_to_tensor(np.array([val[0] for val in batch]))
-        actions = tf.convert_to_tensor(np.array([val[1] for val in batch]))
-        rewards = tf.convert_to_tensor(np.array([val[2] for val in batch]).astype(np.float32))
+    
+        action_mask = batch[1]
+        actions = tf.convert_to_tensor(np.array([val[2] for val in batch]))
+        rewards = tf.convert_to_tensor(np.array([val[3] for val in batch]).astype(np.float32))
         next_states = tf.convert_to_tensor(np.array([(np.zeros(self._state_dim)
-                                 if val[3] is None else val[3]) for val in batch]))
-        terminate = tf.convert_to_tensor(np.array([val[4] for val in batch]))
+                                 if val[3] is None else val[4]) for val in batch]))
+        terminate = tf.convert_to_tensor(np.array([val[5] for val in batch]))
 
-        
+#         print("states ",states)
+#         print("action_mask ",action_mask)
+#         print("actions ",actions)
+#         print("rewards ",rewards)
+#         print("next_states ",next_states)
+#         print("terminate ",terminate)
         #         ************* A Calculate Loss on reward and normalisation first  *******************
         # 1) calculate the losses 
             
