@@ -5,7 +5,7 @@ import pandas as pd
 from modules.lsfm import Agent
 from modules.environnement import custom_env
 from modules.params import PARAM_ENV,PARAM_AGENT
-from modules.experiments import experience_buffer_LSFM
+from modules.experiments import experience_offline_LSFM
 import csv
 
 import pandas as pd
@@ -14,16 +14,17 @@ sns.set()
 import matplotlib.pyplot as plt
 
 
+# Environnement Mae 2D : SimpleGrid
+# env_name = "SimpleGrid"
+# env = custom_env(env_name, PARAM_ENV)
+# state = env.reset()
+# env.render()
 
-env_name = "SimpleGrid"
-env = custom_env(env_name, PARAM_ENV)
-
-state = env.reset()
-env.render()
+environment = custom_env("custom", action_dim = 88,  state_dim= 324)
 
 
 # read buffer
-data = csv.DictReader(open("memory_simple.csv"))
+data = csv.DictReader(open("memory_Ubi.csv"))
 buffer = []
 for row in data:
     episode = []
@@ -36,7 +37,7 @@ for row in data:
 data = pd.DataFrame()
         
 # launch experience of simulations
-data, agent_LSFM = experience_offline_LSFM(env,PARAM_AGENT, buffer)
+data, agent_LSFM = experience_offline_LSFM(environment,PARAM_AGENT, buffer)
 
 # plot
 df = data
@@ -48,16 +49,3 @@ sns.lineplot(x="cum_step", y="Avg_loss_r", data=df, ax = axs[0,1] )
 sns.lineplot(x="cum_step", y="Avg_loss_N", data=df, ax = axs[0,2] )
 sns.lineplot(x="cum_step", y="Avg_loss_psi", data=df, ax = axs[1,0] )
 plt.show()
-
-eval_step = int(PARAM_AGENT["num_episodes"] - PARAM_AGENT["num_episodes"] /10)
-
-avg_loss = df.loc[eval_step:,"Avg_loss"].mean()
-avg_loss_r = df.loc[eval_step:,"Avg_loss_r"].mean()
-avg_loss_N = df.loc[eval_step:,"Avg_loss_N"].mean()
-avg_loss_psi = df.loc[eval_step:,"Avg_loss_psi"].mean()
-
-print("avg_loss", avg_loss)
-print("avg_loss_r", avg_loss_r)
-print("avg_loss_N", avg_loss_N)
-print("avg_loss_psi", avg_loss_psi)
-
