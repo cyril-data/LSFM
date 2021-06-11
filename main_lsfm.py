@@ -5,8 +5,8 @@ import pandas as pd
 from modules.lsfm import Agent
 from modules.environnement import custom_env
 from modules.params import PARAM_ENV,PARAM_AGENT
-from modules.experiments import experience
-
+from modules.experiments import experience_buffer_LSFM
+import csv
 
 import pandas as pd
 import seaborn as sns
@@ -18,17 +18,25 @@ import matplotlib.pyplot as plt
 env_name = "SimpleGrid"
 env = custom_env(env_name, PARAM_ENV)
 
-agent = Agent(env, PARAM_AGENT)
-
 state = env.reset()
 env.render()
+
+
+# read buffer
+data = csv.DictReader(open("memory_simple.csv"))
+buffer = []
+for row in data:
+    episode = []
+    for key, value in row.items():
+#         print("key,value", key, type(eval(value)))
+        episode.append(eval(value) )
+    buffer.append(np.array(episode))
 
 # initialisation data
 data = pd.DataFrame()
         
 # launch experience of simulations
-data, agent_Q = experience(env, PARAM_AGENT, agent)
-
+data, agent_LSFM = experience_offline_LSFM(env,PARAM_AGENT, buffer)
 
 # plot
 df = data

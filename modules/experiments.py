@@ -1,9 +1,10 @@
 import pandas as pd
-from modules.dqn import Agent_Q
 import numpy as np
 from modules.memory import Memory
 import tensorflow as tf
 
+from modules.dqn import Agent_Q
+from modules.lsfm import Agent
 
 def carac_model(param) : 
     if param["train_LSFM"] : calcul = "LSFM"
@@ -21,6 +22,93 @@ def loss_func(ypred, ytrue) :
 #     MAE
     return keras.losses.mean_absolute_error(ypred, ytrue)
     
+
+
+def experience_offline_LSFM(env,param_agent,buffer) : 
+    
+    data = pd.DataFrame()
+    
+    for k in range(param_agent["run"]) : 
+        # load LSFM model : 
+    
+        result_compile = []
+        steps = 0
+
+    #     No mask for simple env
+        if env.env_name == "SimpleGrid" : 
+            action_space = np.arange(env.action_space.n)
+            action_no_mask = np.full((env.action_space.n), 1)   
+            possible_action = action_space
+
+        memory = Memory(param_agent["memory"], buffer)
+
+        avg_loss = 0
+        avg_loss_r  = 0
+        avg_loss_N  = 0
+        avg_loss_psi  = 0
+        
+        
+        
+        agent_LSFM = Agent(env, param_agent)
+        model_LSFM = agent_LSFM.model_LSFM
+    
+        for i in range(param_agent["num_steps"]):
+
+            avg_loss = 0
+
+    ### TRANSITION MATRIX :  Get the prediction error of the next latent space
+            loss_phisp1  = 0
+
+
+    #         TRAIN ON BUFFER ONLY 
+            if buffer != None : 
+
+                loss_all = agent_LSFM.train_LSFM(
+                            model_LSFM, 
+                            memory, 
+                            param_agent["filter_done"])
+
+                avg_loss += loss_all[0]
+                avg_loss_r += loss_all[1]
+                avg_loss_N += loss_all[2]
+                avg_loss_psi += loss_all[3]
+
+
+
+                if steps>0 : 
+                    if steps % 200 == 0:
+                        avg_loss /= steps
+                        avg_loss_r /= steps
+                        avg_loss_N /= steps
+                        avg_loss_psi /= steps
+                        loss_phisp1 /= steps
+
+                        result = [k, steps, avg_loss, avg_loss_r, avg_loss_N, avg_loss_psi, loss_phisp1]
+                        print("run: {:03d}, cumul_step: {:06d}, avg loss: {:0.4f}, avg_loss_r: {:0.4f}, avg_loss_N: {:0.4f}, avg_loss_psi: {:0.4f}".format(*result[:-1]))
+
+                        result_compile.append(result)
+
+                steps += 1
+
+
+        data_train_df = pd.DataFrame(result_compile, columns=[ 
+            "run", 
+            "cum_step",
+            "Avg_loss" ,  
+            "Avg_loss_r",  
+            "Avg_loss_N",  
+            "Avg_loss_psi", "loss_phisp1"])
+
+        data_train_df["carac"] = carac_model(param_agent) 
+        data_train_df["run"] = k
+        data = pd.concat([data, data_train_df])          
+    
+    
+    
+    
+    return data, agent_LSFM
+
+
 
 def simu(env,param_agent,agent_LSFM = None, agent_Q = None, buffer = None, buffer_latent = None) : 
       

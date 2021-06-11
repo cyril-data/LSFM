@@ -93,6 +93,7 @@ PARAM_AGENT = {
     "latent_space": latent_dimension,
     "hidden_dim_ratio": hidden_ratio,
     "num_episodes" : 10,
+    "num_steps" : 4000,
     "batch_size" : 32,
     "RANDOM_REWARD_STD" : -1.0, 
     "double_model" : False,
