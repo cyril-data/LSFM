@@ -3,6 +3,7 @@ from tensorflow import keras
 from tensorflow.keras import layers, Input
 import random
 import numpy as np
+from tensorflow.keras.layers import Lambda
 
 
 
@@ -75,10 +76,30 @@ class Agent:
         
 #         layers_ouputs["dot_reward"] = layers.Dense(1, use_bias=False, name="dot_layer")(layer_latent)
         layers_ouputs["phi"] = layer_latent    
+        
+        
+        
+        
+#         ---------------------------------------------------------------------------
+#         Ma layers : transition state latent matrices
+        initializer_zero = tf.keras.initializers.Zeros()
+        
+        x_1_stop_grad = Lambda(lambda x: tf.stop_gradient(x),name="Stop_grad_prop")(layer_latent)
+        shape = (self.dim_latent, self.dim_latent * self._action_size)
+        x = layers.Dense(
+            self.dim_latent * self._action_size,
+            use_bias=False, 
+            name = "Ma", 
+            kernel_initializer=initializer_zero
+#             kernel_initializer=my_init(shape,self._action_size)
+        )(x_1_stop_grad)
+        layers_ouputs["Ma"] = layers.Reshape((self._action_size, self.dim_latent))(x)
+#         ---------------------------------------------------------------------------
+        
+    
+    
+#         Model compilation
         self.model_LSFM = keras.Model(inputs=inputs, outputs=layers_ouputs, name="model_LSFM")  
-        
-        
-        
 #         In case we activate the double model as in DQN
         self.model_LSFM_prev = keras.Model(inputs=inputs, outputs=layers_ouputs, name="model_LSFM_prev")   
         
@@ -233,6 +254,7 @@ class Agent:
         alpha_r = self.param["alpha_r"]
         alpha_N = self.param["alpha_N"]
         alpha_psi = self.param["alpha_psi"]  
+        alpha_phi = self.param["alpha_phi"]  
         
         with tf.GradientTape() as tape:
             logits_r = self.get_from_actions( states, actions, model, "ra")
@@ -243,8 +265,11 @@ class Agent:
 
             logits_psi = self.get_from_actions( states, actions, model, "Fa")
             loss_psi = self.loss_mse( logits_psi, target_psi )
+            
+            logits_phi = self.get_from_actions( states, actions, model, "Ma")            
+            loss_phi = self.loss_mse( logits_phi, model(next_states)["phi"]    )
 
-            loss_tot = alpha_r * loss_r + alpha_N * loss_N + alpha_psi * loss_psi
+            loss_tot = alpha_r * loss_r + alpha_N * loss_N + alpha_psi * loss_psi + alpha_phi * loss_phi
         
         # 2) : calculate the gradient   
         grads = tape.gradient(loss_tot, model.trainable_weights) 
@@ -253,7 +278,11 @@ class Agent:
 
         # 3) : apply the gradient 
         self.param["optimizer_LSFM"].apply_gradients(zip(grads, model.trainable_weights)) 
-          
+        
+        
+        
+        
+        
         #         ****************************************************
 
 #         if model_prev is not None:
@@ -273,7 +302,8 @@ class Agent:
         return [tf.reduce_mean(loss_tot).numpy(), 
                 tf.reduce_mean(loss_r).numpy(), 
                 tf.reduce_mean(loss_N).numpy(), 
-                tf.reduce_mean(loss_psi).numpy()]
+                tf.reduce_mean(loss_psi).numpy(), 
+                tf.reduce_mean(loss_phi).numpy()]
 
 
 

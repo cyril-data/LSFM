@@ -1,21 +1,5 @@
 from tensorflow import keras
 
-# ENV_NAME = "SimpleGrid"
-# PARAM_ENV = {
-#     "agent_pos":[0, 0], 
-#     "goal_pos":[[5,0] ],
-#     "reward_minmax":[-1.,0.],
-#     "reward_user_defined":True,
-#     "reward_pos":[[0, 0],[0, 1],[0, 2],[0, 3],[0, 4],[0, 5], 
-#                   [1, 0],[1, 1],[1, 2],[1, 3],[1, 4],[1, 5], 
-#                                               [2, 4],[2, 5], 
-#                                               [3, 4],[3, 5], 
-#                   [4, 0],[4, 1],[4, 2],[4, 3],[4, 4],[4, 5], 
-#                   [5, 0],[5, 1],[5, 2],[5, 3],[5, 4],[5, 5]],
-#     "grid_size" : 6,
-#     "pattern": "empty",
-#     "obs_mode":"index",
-# }
 
 
 
@@ -66,6 +50,22 @@ from tensorflow import keras
 
 
 
+# ENV_NAME = "SimpleGrid"
+# PARAM_ENV = {
+#     "agent_pos":[0, 0], 
+#     "goal_pos":[[5,0] ],
+#     "reward_minmax":[-1.,0.],
+#     "reward_user_defined":True,
+#     "reward_pos":[[0, 0],[0, 1],[0, 2],[0, 3],[0, 4],[0, 5], 
+#                   [1, 0],[1, 1],[1, 2],[1, 3],[1, 4],[1, 5], 
+#                                               [2, 4],[2, 5], 
+#                                               [3, 4],[3, 5], 
+#                   [4, 0],[4, 1],[4, 2],[4, 3],[4, 4],[4, 5], 
+#                   [5, 0],[5, 1],[5, 2],[5, 3],[5, 4],[5, 5]],
+#     "grid_size" : 6,
+#     "pattern": "empty",
+#     "obs_mode":"index",
+# }
 
 ENV_NAME = "custom"
 PARAM_ENV = {
@@ -87,6 +87,7 @@ PARAM_AGENT = {
     "alpha_r" : 1.,
     "alpha_N" : 0.1,
     "alpha_psi" : 0.01,
+    "alpha_phi" : 0.01,
     "policy": {
         "type": ["eps-greedy", "exponantial"],
         "eps-greedy": {

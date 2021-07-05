@@ -5,8 +5,8 @@ import pandas as pd
 from modules.lsfm import Agent
 from modules.environnement import custom_env
 from modules.params import PARAM_ENV,PARAM_AGENT
-from modules.experiments import experience_offline_LSFM, experience_online_LSFM, test_error_offline_LSFM
-from modules.post import global_loss,losses_on_positive_rewards_global
+from modules.experiments import experience_offline_LSFM, experience_online_LSFM, test_error_Ma_offline_LSFM
+from modules.post import global_loss,losses_on_rewards_global
 import csv
 
 import pandas as pd
@@ -51,6 +51,10 @@ def main(argv):
     online = False
     train = True
 
+
+    now = datetime.now()
+    dt_string = now.strftime("%Y-%m-%d_%Hh-%Mm-%Ss")
+
     for opt, arg in opts:
         if opt == '-b':
             buffer = []
@@ -74,6 +78,13 @@ def main(argv):
 
             buffer_train = list(buff_df.loc[0:id_train].values)
             buffer_test = list(buff_df.loc[id_train+1:].values)
+
+
+            fig, axs = plt.subplots(1,2, figsize=(13, 5))
+
+            sns.distplot(buff_df['reward'], ax = axs[0]).set(title='Reward distribution')
+            sns.distplot(Ends['reward'], ax = axs[1]).set(title='Reward distribution on at the end of episode')
+            plt.savefig(dt_string+"reward_dist.jpg")
 
 
         if opt == '-e':
@@ -103,8 +114,6 @@ def main(argv):
         train = False
 
 
-    now = datetime.now()
-    dt_string = now.strftime("%Y-%m-%d_%Hh-%Mm-%Ss")
     folder_WORK = "LSFM"+str(PARAM_AGENT["latent_space"])+"_"+dt_string
 
 
@@ -132,28 +141,40 @@ def main(argv):
         sns.lineplot(x="cum_step", y="Avg_loss_r", data=df, ax = axs[0,1] )
         sns.lineplot(x="cum_step", y="Avg_loss_N", data=df, ax = axs[0,2] )
         sns.lineplot(x="cum_step", y="Avg_loss_psi", data=df, ax = axs[1,0] )
-        plt.show()
+        plt.savefig(folder_WORK+"/"+dt_string+"Loss_LSFM.jpg")
         
     else : 
-
+        nb_actions = environment._action_dim
+        windows = [[ -4.1, -2.9], [ -2.9, -1.9], [ -1.9, -0.9], [-0.9, 0.9], [ 0.9, 1.9]]
         PARAM_AGENT["num_episodes"] = nb_Ep_test-1
 
-        y_pred_df, y_true_df= test_error_offline_LSFM(environment,PARAM_AGENT, buffer_test, save_model_path)
+        y_pred_df, y_true_df= test_error_Ma_offline_LSFM(environment,PARAM_AGENT, buffer_test, save_model_path)
 
         global_losses = global_loss(y_pred_df.loc[:, "reward_one-step":], y_true_df.loc[:, "reward_one-step":])
 
-        reward_positive = losses_on_positive_rewards_global(
-            y_pred_df.loc[:, "action":], y_true_df.loc[:, "action":], thresold = 0.5, nb_actions = 4) 
+        rewards_window = []
 
-        fig, axs = plt.subplots(1,2, figsize=(10, 5))
-        sns.barplot(x="error", y="MSE", hue="action", data=reward_positive, ax = axs[0])
+        for window in windows : 
+            print("window", window)
+            rewards_window.append(losses_on_rewards_global(
+                y_pred_df.loc[:, "action":], y_true_df.loc[:, "action":], window =window, nb_actions=nb_actions))
 
-        sns.barplot(x="error", y="MSE", data=global_losses, ax = axs[1])
+
+        fig, axs = plt.subplots((len(rewards_window) +1)//2,2, figsize=(15, 25))
+
+        sns.barplot(x="error", y="MSE", data=global_losses, ax = axs[0,0]).set(
+            title='Test global errors', xlabel="")
+        plt.setp(axs[0,0].get_xticklabels(), rotation=30, horizontalalignment='right')
+
+        for i, window in enumerate(windows) : 
+            
+            sns.boxplot(x="error", y="MSE",  data=rewards_window[i], ax = axs[(i+1)//2, (i+1)%2]).set(
+                xlabel="", title='Test errors on [{}< reward < {}] by actions'.format(window[0], window[1]))
+            plt.setp(axs[(i+1)//2, (i+1)%2].get_xticklabels(), rotation=30, horizontalalignment='right')
 
 
-        plt.setp(axs[0].get_xticklabels(), rotation=20, horizontalalignment='right')
-        plt.setp(axs[1].get_xticklabels(), rotation=20, horizontalalignment='right')
-        plt.show()
+    
+        plt.savefig(dt_string+"errors_test.jpg")
 
 if __name__ == "__main__":
    main(sys.argv[1:])

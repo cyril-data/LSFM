@@ -40,13 +40,41 @@ def global_loss(y_pred_df, y_true_df) :
         
     return errors_df
 
-def losses_on_positive_rewards(col, y_pred_df, y_true_df, thresold = 0.5, nb_actions = 4) : 
+# def losses_on_positive_rewards(col, y_pred_df, y_true_df, thresold = 0.5, nb_actions = 4) : 
+    
+#     losses_action = []
+#     df = y_true_df
+    
+#     for action in range(nb_actions):
+#         id_action = list(df.loc[df["reward_one-step"]>thresold].loc[df["action"]==action].index)
+
+        
+#         loss = losses(col, y_pred_df.loc[id_action], y_true_df.loc[id_action])
+
+#         loss.insert(0, action)
+
+#         losses_action.append(loss)
+
+#     loss_action_df = pd.DataFrame(losses_action, columns=["action", "MSE", "MAE", "error"])
+        
+#     return loss_action_df
+
+# def losses_on_positive_rewards_global(y_pred_df, y_true_df, thresold = 0.5, nb_actions = 4) : 
+#     data = pd.DataFrame()
+#     for col in list(y_pred_df.columns) : 
+#         loss = losses_on_positive_rewards(col, y_pred_df, y_true_df, thresold = 0.5, nb_actions = 4) 
+#         data = pd.concat([data, loss])
+#     return data
+
+def losses_on_rewards(col, y_pred_df, y_true_df, window = [0.5, 1.5], nb_actions = 4) : 
     
     losses_action = []
     df = y_true_df
     
     for action in range(nb_actions):
-        id_action = list(df.loc[df["reward_one-step"]>thresold].loc[df["action"]==action].index)
+        id_action = list(df.loc[df["reward_one-step"]>window[0] ].loc[df["reward_one-step"]<window[1]].loc[
+                df["action"]==action].index)            
+        
 
         
         loss = losses(col, y_pred_df.loc[id_action], y_true_df.loc[id_action])
@@ -58,10 +86,11 @@ def losses_on_positive_rewards(col, y_pred_df, y_true_df, thresold = 0.5, nb_act
     loss_action_df = pd.DataFrame(losses_action, columns=["action", "MSE", "MAE", "error"])
         
     return loss_action_df
-
-def losses_on_positive_rewards_global(y_pred_df, y_true_df, thresold = 0.5, nb_actions = 4) : 
+    
+def losses_on_rewards_global(y_pred_df, y_true_df, window = [0.5, 1.1], nb_actions = 4) : 
     data = pd.DataFrame()
     for col in list(y_pred_df.columns) : 
-        loss = losses_on_positive_rewards(col, y_pred_df, y_true_df, thresold = 0.5, nb_actions = 4) 
+        loss = losses_on_rewards(
+            col, y_pred_df, y_true_df, window = window, nb_actions = nb_actions) 
         data = pd.concat([data, loss])
     return data
