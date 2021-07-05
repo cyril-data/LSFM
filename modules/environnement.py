@@ -19,7 +19,7 @@ from tensorflow import keras
 class custom_env:
 
     def __init__(self, env_name, param={}, state_dim = None, action_dim=None):
-        # Initialize atributes
+        #    Initialize atributes
         self.env_name = env_name    # name of environment
         self.param = param          # dictionarry of environment parameters
 

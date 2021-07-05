@@ -1,22 +1,23 @@
 from tensorflow import keras
 
-PARAM_ENV = {
-    "agent_pos":[0, 0], 
-    "goal_pos":[[5,0] ],
-    "reward_minmax":[-1.,0.],
-    "reward_user_defined":True,
-    "reward_pos":[[0, 0],[0, 1],[0, 2],[0, 3],[0, 4],[0, 5], 
-                  [1, 0],[1, 1],[1, 2],[1, 3],[1, 4],[1, 5], 
-                                              [2, 4],[2, 5], 
-                                              [3, 4],[3, 5], 
-                  [4, 0],[4, 1],[4, 2],[4, 3],[4, 4],[4, 5], 
-                  [5, 0],[5, 1],[5, 2],[5, 3],[5, 4],[5, 5]],
-    "grid_size" : 6,
-    "pattern": "empty",
-    "obs_mode":"index",
-}
+# ENV_NAME = "SimpleGrid"
+# PARAM_ENV = {
+#     "agent_pos":[0, 0], 
+#     "goal_pos":[[5,0] ],
+#     "reward_minmax":[-1.,0.],
+#     "reward_user_defined":True,
+#     "reward_pos":[[0, 0],[0, 1],[0, 2],[0, 3],[0, 4],[0, 5], 
+#                   [1, 0],[1, 1],[1, 2],[1, 3],[1, 4],[1, 5], 
+#                                               [2, 4],[2, 5], 
+#                                               [3, 4],[3, 5], 
+#                   [4, 0],[4, 1],[4, 2],[4, 3],[4, 4],[4, 5], 
+#                   [5, 0],[5, 1],[5, 2],[5, 3],[5, 4],[5, 5]],
+#     "grid_size" : 6,
+#     "pattern": "empty",
+#     "obs_mode":"index",
+# }
 
-ENV_NAME = "SimpleGrid"
+
 
 
 # param_env = {
@@ -64,8 +65,18 @@ ENV_NAME = "SimpleGrid"
 # }
 
 
+
+
+ENV_NAME = "custom"
+PARAM_ENV = {
+    "action_space" : 88, 
+    "state_dim"  : 324
+}
+
+
+
 # dimension du réseau : 
-latent_dimension = 30
+latent_dimension = 250
 hidden_ratio = 1.
 
 # paramètre de l'agent 
@@ -93,7 +104,7 @@ PARAM_AGENT = {
     "latent_space": latent_dimension,
     "hidden_dim_ratio": hidden_ratio,
     "num_episodes" : 10,
-    "num_steps" : 4000,
+    "num_steps" : 10,
     "batch_size" : 32,
     "RANDOM_REWARD_STD" : -1.0, 
     "double_model" : False,
@@ -106,11 +117,15 @@ PARAM_AGENT = {
     "avg_loss_phisp1" : False,
     "run" : 1,
     "render": False,
-    "avg_loss_phisp1" : False,
+    "avg_loss_phisp1" : 1000,
 }
 
 
-# actions_down = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+
+
+
+
+#   actions_down = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 # for i in range(10) : 
 #     action = actions_down[i]
 #     next_state, reward, done, info = env.step(action)
