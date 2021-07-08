@@ -156,7 +156,13 @@ def main(argv):
         y_pred = y_pred_df["reward_one-step"].apply(np.argmax)
         y_true = y_true_df["reward_one-step"]
 
-        classif(y_true, y_pred, dt_string, label = reward_classes)
+        error_classif_df = classif(y_true, y_pred, dt_string, label = reward_classes)
+        print("error_classif_df", error_classif_df)
+
+        fig , ax = plt.subplots()
+        sns.barplot(x="reward_classes", y="error", hue = "type", data=error_classif_df).set(
+            title='Test classif reward errors', xlabel="")
+        plt.savefig(dt_string+"classif_reward_error.jpg")
 
         nb_actions = environment._action_dim
 
@@ -176,7 +182,6 @@ def main(argv):
 
         rewards_window = []
         for i in range(len(reward_classes)) : 
-            print("reward_class", i)
             rewards_window.append(losses_on_rewards_global(cols,
                 y_pred_df.loc[:, "action":], y_true_df.loc[:, "action":], 
                 reward_class =i, nb_actions=nb_actions))

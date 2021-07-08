@@ -12,7 +12,7 @@ def norm(vect) :
     return tf.keras.backend.get_value(tf.norm(vect, ord='euclidean'))
 
 
-def classif(y_true, y_pred,  dt_string, label = None) : 
+def classif(y_true, y_pred, dt_string, label = None) : 
 
 #     reward_classes = [[-np.inf,parser[0]]] + [[parser[k],parser[k+1]]  for k in range(len(parser)-1)] + [[parser[-1], np.inf]]
     classes = y_true.unique()
@@ -38,7 +38,9 @@ def classif(y_true, y_pred,  dt_string, label = None) :
         precision = TP / (FP + TP)
         f1 = 2* recall * precision / (recall + precision)
 
-        error_classif.append([recall,precision, f1, reward_classes[classes[i]] ])
+        error_classif.append([recall, reward_classes[classes[i]] , "recall"])
+        error_classif.append([precision, reward_classes[classes[i]] , "precision"])
+        error_classif.append([f1, reward_classes[classes[i]] , "f1"])
 
 
         fig, ax = plt.subplots()
@@ -49,8 +51,8 @@ def classif(y_true, y_pred,  dt_string, label = None) :
 
     # sns.heatmap(cf_matrix, annot=labels, fmt=‘’, cmap='Blues')
         plt.savefig(dt_string+"confusion_"+str(i)+".jpg")
-        # plt.show()
-    error_classif_df = pd.DataFrame(error_classif, columns = ["recall","precision", "f1", "reward_classes"])
+    error_classif_df = pd.DataFrame(error_classif, columns = ["error", "reward_classes", "type"])
+    error_classif_df["reward_classes"] = error_classif_df["reward_classes"].astype(str)
     return error_classif_df
 
 def losses_reg(col, y_pred_df, y_true_df) : 
