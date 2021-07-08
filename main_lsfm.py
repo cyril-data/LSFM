@@ -5,8 +5,8 @@ import pandas as pd
 from modules.lsfm import Agent
 from modules.environnement import custom_env
 from modules.params import PARAM_ENV,PARAM_AGENT
-from modules.experiments import experience_offline_LSFM, experience_online_LSFM, test_error_Ma_offline_LSFM
-from modules.post import global_loss,losses_on_rewards_global
+from modules.experiments import experience_offline_LSFM, experience_online_LSFM, test_error_Ma_rewClassif_offline_LSFM
+from modules.post import global_loss_reg,losses_on_rewards_global, classif
 import csv
 
 import pandas as pd
@@ -28,7 +28,7 @@ import sys, getopt
 # python main_lsfm.py -e custom -b memory_Ubi.csv -o False train
 
 # Test on buffer with model :   
-# python main_lsfm.py -e SimpleGrid -b memory_maze_word.csv -m LSFM_offline_simplemaze test
+# python main_lsfm.py -e SimpleGrid -b memory_maze_word.csv -m LSFM_Ma_classif_offline test
 # python main_lsfm.py -e custom -b memory_Ubi.csv -m LSFM_offline_Ubi test
 
 
@@ -144,37 +144,54 @@ def main(argv):
         plt.savefig(folder_WORK+"/"+dt_string+"Loss_LSFM.jpg")
         
     else : 
-        nb_actions = environment._action_dim
-        windows = [[ -4.1, -2.9], [ -2.9, -1.9], [ -1.9, -0.9], [-0.9, 0.9], [ 0.9, 1.9]]
+        
         PARAM_AGENT["num_episodes"] = nb_Ep_test-1
 
-        y_pred_df, y_true_df= test_error_Ma_offline_LSFM(environment,PARAM_AGENT, buffer_test, save_model_path)
+        y_pred_df, y_true_df= test_error_Ma_rewClassif_offline_LSFM(
+            environment,PARAM_AGENT, buffer_test, save_model_path,  PARAM_AGENT["reward_parser" ])
 
-        global_losses = global_loss(y_pred_df.loc[:, "reward_one-step":], y_true_df.loc[:, "reward_one-step":])
+        parser =  PARAM_AGENT["reward_parser" ]
+        reward_classes = [[-np.inf,parser[0]]] + [[parser[k],parser[k+1]]  for k in range(len(parser)-1)] + [[parser[-1], np.inf]]
+
+        y_pred = y_pred_df["reward_one-step"].apply(np.argmax)
+        y_true = y_true_df["reward_one-step"]
+
+        classif(y_true, y_pred, dt_string, label = reward_classes)
+
+        nb_actions = environment._action_dim
+
+
+        cols = ["Norm_phi"   , "target_psi"    , "phi_sp1"  ] 
+        metric = "MSE"
+
+        global_losses = global_loss_reg(y_pred_df.loc[:, cols], y_true_df.loc[:,cols])
+
+
+        fig , ax = plt.subplots()
+
+        sns.barplot(x="error", y="MSE", data=global_losses).set(
+            title='Test global errors', xlabel="")
+        plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
+        plt.savefig(dt_string+"global_losses_MSE.jpg")
 
         rewards_window = []
-
-        for window in windows : 
-            print("window", window)
-            rewards_window.append(losses_on_rewards_global(
-                y_pred_df.loc[:, "action":], y_true_df.loc[:, "action":], window =window, nb_actions=nb_actions))
-
-
-        fig, axs = plt.subplots((len(rewards_window) +1)//2,2, figsize=(15, 25))
-
-        sns.barplot(x="error", y="MSE", data=global_losses, ax = axs[0,0]).set(
-            title='Test global errors', xlabel="")
-        plt.setp(axs[0,0].get_xticklabels(), rotation=30, horizontalalignment='right')
-
-        for i, window in enumerate(windows) : 
-            
-            sns.boxplot(x="error", y="MSE",  data=rewards_window[i], ax = axs[(i+1)//2, (i+1)%2]).set(
-                xlabel="", title='Test errors on [{}< reward < {}] by actions'.format(window[0], window[1]))
-            plt.setp(axs[(i+1)//2, (i+1)%2].get_xticklabels(), rotation=30, horizontalalignment='right')
-
-
+        for i in range(len(reward_classes)) : 
+            print("reward_class", i)
+            rewards_window.append(losses_on_rewards_global(cols,
+                y_pred_df.loc[:, "action":], y_true_df.loc[:, "action":], 
+                reward_class =i, nb_actions=nb_actions))
     
-        plt.savefig(dt_string+"errors_test.jpg")
+        for i in range(len(reward_classes)) : 
+            if rewards_window[i].loc[:,"MSE":"MAE"].applymap(lambda x: x is None).all().all() : 
+                print("No value for class", i)
+            else :       
+                fig , ax = plt.subplots()
+                dataplot_i = rewards_window[i].fillna(value=np.nan)
+                sns.boxplot(x="error", y=metric,  data=dataplot_i).set(
+                    xlabel="", title='Test errors on reward class {} by actions'.format(reward_classes[i]))
+                plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
+                plt.savefig(dt_string+"MSE_reward_class_"+str(i)+".jpg")
+
 
 if __name__ == "__main__":
    main(sys.argv[1:])

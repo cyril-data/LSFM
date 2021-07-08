@@ -5,7 +5,8 @@ import tensorflow as tf
 from tensorflow import keras
 
 from modules.dqn import Agent_Q
-from modules.lsfm import Agent
+from modules.lsfm import Agent, discretize
+
 
 import time
 
@@ -290,7 +291,7 @@ def experience_offline_LSFM(env,param_agent,buffer) :
         
     return data, agent_LSFM
 
-def test_error_Ma_offline_LSFM(env,param_agent, buffer, save_model_path) : 
+def test_error_Ma_rewClassif_offline_LSFM(env,param_agent, buffer, save_model_path, reward_parser) : 
     
     result_compile = []
     steps = 0
@@ -337,17 +338,23 @@ def test_error_Ma_offline_LSFM(env,param_agent, buffer, save_model_path) :
             terminates = [done]
             
             
+            target_psi = agent_LSFM.target_psi(
+                model_LSFM, states, actions, next_states,terminates,rewards, param_agent["filter_done"])
+
+#             loss_tot, loss_r ,  loss_N , loss_psi , loss_phi = agent_LSFM.losses_all(
+#                 states, actions, rewards,next_states, target_psi, agent_LSFM)
+            
+            
             phi = model_LSFM(states)["phi"]
             phi_sp1 = agent_LSFM.model_LSFM(next_states)["phi"]
 #             next_state_latent = np.array(tf.reshape(phi_sp1, phi_sp1.shape[-1]))
 
 
-            target_psi = agent_LSFM.target_psi(model_LSFM, states, actions, next_states,terminates,rewards, param_agent["filter_done"])
-
 #             y_true = [reward, 1., target_psi, next_state_latent]
 
             logits_r = agent_LSFM.get_from_actions( states, actions, model_LSFM, "ra")
             reward_onestep = tf.keras.backend.get_value(logits_r)[0]
+#             reward_onestep = tf.keras.backend.get_value(logits_r)[0]
             
             norm_phi = tf.keras.backend.get_value(tf.norm(phi, axis=1))[0]
             
@@ -355,13 +362,15 @@ def test_error_Ma_offline_LSFM(env,param_agent, buffer, save_model_path) :
             phi_sp1_pred = agent_LSFM.get_from_actions( states, actions, model_LSFM, "Ma") 
 
             reward_n_step = tf.keras.backend.get_value(
-                agent_LSFM.next_rewards( phi_pred, actions, model_LSFM)[0]
-            )
-
+                agent_LSFM.next_rewards( phi_pred, actions, model_LSFM))[0]
 
             
-            y_true = [i, cnt, steps,  done, action, reward,
-                      1., target_psi,   phi_sp1, reward]
+            
+            y_true = [i, cnt, steps,  done, action, discretize(reward, reward_parser),
+                      1., target_psi,   phi_sp1, discretize(reward, reward_parser)]
+            
+            
+            
             y_pred = [i, cnt, steps,  done, action, reward_onestep,
                       norm_phi, logits_psi, phi_sp1_pred, reward_n_step]
             
@@ -371,8 +380,9 @@ def test_error_Ma_offline_LSFM(env,param_agent, buffer, save_model_path) :
             
             
             
-            
             phi_pred = phi_sp1_pred
+            
+            
             steps += 1
             
             if done:
@@ -430,155 +440,3 @@ def test_error_Ma_offline_LSFM(env,param_agent, buffer, save_model_path) :
 
     return y_pred_df, y_true_df
        
-    
-    
-
-def test_error_offline_LSFM(env,param_agent, buffer, save_model_path) : 
-    
-    result_compile = []
-    steps = 0
-
-#     No mask for simple env
-    if env.env_name == "SimpleGrid" : 
-        action_space = np.arange(env.action_space.n)
-        action_no_mask = np.full((env.action_space.n), 1)   
-        possible_action = action_space
-
-    memory = Memory(param_agent["memory"], buffer)
-
-    avg_loss = 0
-    avg_loss_r  = 0
-    avg_loss_N  = 0
-    avg_loss_psi  = 0
-
-    agent_LSFM = Agent(env, param_agent, save_model_path)
-    model_LSFM = agent_LSFM.model_LSFM
-    
-    agent_LSFM.M_transi(model_LSFM)
-    
-#     nb_steps = min(param_agent["num_steps"], len(buffer))
-#     trajectories = []
-#     trajectory = []
-
-    y_true_compile = []
-    y_pred_compile = []
-
-    for i in range(param_agent["num_episodes"]):
-        
-        cnt = 0
-        
-        state,*_= buffer[steps]
-        
-        states = np.array(state).reshape(1,-1)
-        phi_pred = model_LSFM(states)["phi"]
-        
-        while True:
-
-            avg_loss = 0
-
-            state, action_mask, action, reward, next_state, done = buffer[steps]
-            
-            states = np.array(state).reshape(1,-1)
-            action_masks = np.array(action_mask).reshape(1,-1)
-            actions = [action]
-            rewards = [reward]
-            next_states = np.array(next_state).reshape(1,-1)
-            terminates = [done]
-            
-            
-            phi = model_LSFM(states)["phi"]
-            phi_sp1 = agent_LSFM.model_LSFM(next_states)["phi"]
-#             next_state_latent = np.array(tf.reshape(phi_sp1, phi_sp1.shape[-1]))
-
-
-            target_psi = agent_LSFM.target_psi(model_LSFM, states, actions, next_states,terminates,rewards, param_agent["filter_done"])
-
-#             y_true = [reward, 1., target_psi, next_state_latent]
-
-            logits_r = agent_LSFM.get_from_actions( states, actions, model_LSFM, "ra")
-            reward_onestep = tf.keras.backend.get_value(logits_r)[0]
-            
-            norm_phi = tf.keras.backend.get_value(tf.norm(phi, axis=1))[0]
-            
-            logits_psi = agent_LSFM.get_from_actions( states, actions, model_LSFM, "Fa")
-            phi_sp1_pred = agent_LSFM.next_phi_pred(model_LSFM, phi_pred,actions)
-#             y_pred = [logits_r, tf.norm(y_pred, axis=1), logits_psi, phi_sp1]
-
-
-
-            reward_n_step = tf.keras.backend.get_value(
-                agent_LSFM.next_rewards( phi_pred, actions, model_LSFM)[0]
-            )
-
-
-            
-            y_true = [i, cnt, steps,  done, action, reward,                      1., target_psi,   phi_sp1, reward]
-            y_pred = [i, cnt, steps,  done, action, reward_onestep, norm_phi, logits_psi, phi_sp1_pred, reward_n_step]
-            
-            y_true_compile.append(y_true)
-            y_pred_compile.append(y_pred)
-            
-            
-            
-            
-            
-            phi_pred = phi_sp1_pred
-            steps += 1
-            
-            if done:
-
-#                 if cnt != 0:
-#                     avg_loss /= cnt
-#                     avg_loss_r /= cnt
-#                     avg_loss_N /= cnt
-#                     avg_loss_psi /= cnt
-#                     loss_phip1 /= cnt
-
-#                 else:
-#                     avg_loss = 0
-#                     loss_phip1 = 0
-
-               
-    
-                if i % 1  == 0 : 
-                    print(
-                    "Ep: {:03d}, stEp: {:03d}, stAll: {:04d}".format(*y_true[:]))
-
-#                 y_true_compile.append(y_true)
-#                 y_pred_compile.append(y_true)
-    #             with train_writer.as_default():
-    #                 tf.summary.scalar('reward', cnt, step=i)
-    #                 tf.summary.scalar('avg loss', avg_loss, step=i)
-                break
-
-            cnt += 1
-            
-    y_true_df = pd.DataFrame(y_true_compile, columns=[ 
-    "Ep",
-    "stEp" ,  
-    "stAll",
-    "finished",
-    "action",
-    "reward_one-step",  
-    "Norm_phi", 
-    "target_psi",
-    "phi_sp1",
-    "reward_n-step"])
-    y_pred_df = pd.DataFrame(y_pred_compile, columns=[ 
-    "Ep",
-    "stEp" ,  
-    "stAll",
-    "finished",
-    "action",
-    "reward_one-step",  
-    "Norm_phi", 
-    "target_psi",
-    "phi_sp1",
-    "reward_n-step"])
-        
-
-
-    return y_pred_df, y_true_df
-       
-    
-    

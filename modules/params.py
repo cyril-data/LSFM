@@ -119,6 +119,7 @@ PARAM_AGENT = {
     "run" : 1,
     "render": False,
     "avg_loss_phisp1" : 1000,
+    "reward_parser" : [-1.5,-0.5,0.5,1.5],
 }
 
 
