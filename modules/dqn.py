@@ -6,10 +6,10 @@ from tensorflow.keras import layers, Input
 class Agent_Q:
     
         
-    def __init__(self, enviroment, param = {}, save_model=None):
+    def __init__(self, environment, param = {}, save_model=None):
         self.param = param
-        self._action_size = enviroment.action_space.n
-        self._state_dim = enviroment._state_dim
+        self._action_size = environment.action_space.n
+        self._state_dim = environment._state_dim
         self.dim_latent = self.param["latent_space"]
         self.hidden_dim = int(self.param["latent_space"] * self.param["hidden_dim_ratio"])
         self.batch_size = self.param["batch_size"]

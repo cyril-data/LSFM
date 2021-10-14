@@ -1,6 +1,7 @@
 import numpy as np
 import utils
 
+
 class SimpleGrid(object):
     def __init__(self, size, block_pattern="empty", block_user="empty",
                  verbose=False, obs_mode="onehot"):
@@ -31,29 +32,33 @@ class SimpleGrid(object):
         if obs_mode == "index":
             self.obs_size = 1
             self.goal_size = 1
-            
+
     def reset(self, goal_pos=None, agent_pos=None, reward_pos=None, reward_minmax=None, reward_user_defined=False):
         self.done = False
-        if goal_pos != None   : self.goal_pos = goal_pos
-        else:                   self.goal_pos = [self.get_free_spot()]
+        if goal_pos != None:
+            self.goal_pos = goal_pos
+        else:
+            self.goal_pos = [self.get_free_spot()]
 
-        if agent_pos != None  : self.agent_pos = agent_pos
-        else:                   self.agent_pos = self.get_free_spot()
+        if agent_pos != None:
+            self.agent_pos = agent_pos
+        else:
+            self.agent_pos = self.get_free_spot()
 
-        if reward_pos == None : self.reward_pos = self.goal_pos
-        else : 
-            if reward_user_defined : self.reward_pos = reward_pos   
-            else : self.reward_pos = self.goal_pos
-            
+        if reward_pos == None:
+            self.reward_pos = self.goal_pos
+        else:
+            if reward_user_defined:
+                self.reward_pos = reward_pos
+            else:
+                self.reward_pos = self.goal_pos
 
-
-        if reward_minmax == None : 
+        if reward_minmax == None:
             self.reward_min = 0.
             self.reward_max = 1.
-        else : 
+        else:
             self.reward_min = reward_minmax[0]
             self.reward_max = reward_minmax[1]
-    
 
     def get_free_spot(self):
         free = False
@@ -66,20 +71,79 @@ class SimpleGrid(object):
 
             if try_position not in self.all_positions:
                 return try_position
-        
+
     def make_blocks(self, patterns, user_defined=None):
-        if isinstance(patterns, str) :   pattern = patterns
-        else : 
+        if isinstance(patterns, str):
+            pattern = patterns
+        else:
             pattern = patterns[0]
             user_defined = patterns[1]
+
+        if pattern == "sixteen_rooms":
+            mid = int(self.grid_size // 2)
+            quart = int(self.grid_size // 4)
+            last = self.grid_size - (quart + 1)
+
+            bottle_1 = int(quart // 2)
+            bottle_2 = int((quart + mid) // 2)
+            bottle_3 = int((quart + 2*mid) // 2)+1
+            bottle_4 = int((quart + 3*mid) // 2)+1
+
+            blocks_a = [[quart, i] for i in range(self.grid_size)]
+            blocks_b = [[i, quart] for i in range(self.grid_size)]
+            blocks_c = [[i, mid] for i in range(self.grid_size)]
+            blocks_d = [[mid, i] for i in range(self.grid_size)]
+            blocks_e = [[i, last] for i in range(self.grid_size)]
+            blocks_f = [[last, i] for i in range(self.grid_size)]
+
+            blocks = blocks_a + blocks_b + blocks_c + blocks_d + blocks_e + blocks_f
+            self.bottlenecks = [
+                [quart, bottle_1],
+                [mid, bottle_1],
+                [last, bottle_1],
+                [quart, bottle_2],
+                [mid, bottle_2],
+                [last, bottle_2],
+                [quart, bottle_3],
+                [mid, bottle_3],
+                [last, bottle_3],
+                [quart, bottle_4],
+                [mid, bottle_4],
+                [last, bottle_4],
+
+                [bottle_1, quart],
+                [bottle_1, mid],
+                [bottle_1, last],
+                [bottle_2, quart],
+                [bottle_2, mid],
+                [bottle_2, last],
+                [bottle_3, quart],
+                [bottle_3, mid],
+                [bottle_3, last],
+                [bottle_4, quart],
+                [bottle_4, mid],
+                [bottle_4, last],
+
+
+
+                # [quart + mid, earl_bottle + mid],
+                # [quart + mid, late_bottle + mid],
+                # [earl_bottle + mid, quart + mid],
+                # [late_bottle + mid, quart + mid]
+            ]
+            for bottleneck in self.bottlenecks:
+                blocks.remove(bottleneck)
+            return blocks
+
         if pattern == "four_rooms":
             mid = int(self.grid_size // 2)
             earl_mid = int(mid // 2)
             late_mid = mid+earl_mid + 1
-            blocks_a = [[mid,i] for i in range(self.grid_size)]
-            blocks_b = [[i,mid] for i in range(self.grid_size)]
+            blocks_a = [[mid, i] for i in range(self.grid_size)]
+            blocks_b = [[i, mid] for i in range(self.grid_size)]
             blocks = blocks_a + blocks_b
-            self.bottlenecks = [[mid,earl_mid],[mid,late_mid],[earl_mid,mid],[late_mid,mid]]
+            self.bottlenecks = [[mid, earl_mid], [
+                mid, late_mid], [earl_mid, mid], [late_mid, mid]]
             for bottleneck in self.bottlenecks:
                 blocks.remove(bottleneck)
             return blocks
@@ -93,25 +157,26 @@ class SimpleGrid(object):
         if pattern == "random":
             blocks = []
             for i in range(self.state_size // 10):
-                blocks.append([np.random.randint(0, self.grid_size), np.random.randint(0, self.grid_size)])
+                blocks.append([np.random.randint(0, self.grid_size),
+                              np.random.randint(0, self.grid_size)])
             self.bottlenecks = []
             return blocks
         if pattern == "two_rooms":
             mid = int(self.grid_size // 2)
-            blocks = [[mid,i] for i in range(self.grid_size)]
-            blocks.remove([mid,mid])
-            self.bottlenecks = [[mid,mid]]
+            blocks = [[mid, i] for i in range(self.grid_size)]
+            blocks.remove([mid, mid])
+            self.bottlenecks = [[mid, mid]]
             return blocks
-        
+
     @property
     def grid(self):
         grid = np.zeros([self.grid_size, self.grid_size, 3])
 
-        if  (self.reward_max ==  self.reward_min) and  (self.reward_min == 0) :           
-            grid[:,:, 0] = 0.5     
-            grid[:,:, 1] = 0.5     
-            grid[:,:, 2] = 0.5
-        else : 
+        if (self.reward_max == self.reward_min) and (self.reward_min == 0):
+            grid[:, :, 0] = 0.5
+            grid[:, :, 1] = 0.5
+            grid[:, :, 2] = 0.5
+        else:
             for reward in self.reward_pos:
                 grid[reward[0], reward[1], 0] = 0.5
                 grid[reward[0], reward[1], 1] = 0.5
@@ -122,8 +187,7 @@ class SimpleGrid(object):
             grid[block[0], block[1], 0] = 0
             grid[block[0], block[1], 1] = 0
 
-
-        for goal in self.goal_pos : 
+        for goal in self.goal_pos:
             grid[goal[0], goal[1], 1] = 1
             grid[goal[0], goal[1], 0] = 0
             grid[goal[0], goal[1], 2] = 0
@@ -132,18 +196,16 @@ class SimpleGrid(object):
         grid[self.agent_pos[0], self.agent_pos[1], 1] = 0
         grid[self.agent_pos[0], self.agent_pos[1], 2] = 0
 
-
         return grid
-    
 
     def grid_state(self, state):
         grid = np.zeros([self.grid_size, self.grid_size, 3])
 
-        if  (self.reward_max ==  self.reward_min) and  (self.reward_min == 0) :           
-            grid[:,:, 0] = 0.5     
-            grid[:,:, 1] = 0.5     
-            grid[:,:, 2] = 0.5
-        else : 
+        if (self.reward_max == self.reward_min) and (self.reward_min == 0):
+            grid[:, :, 0] = 0.5
+            grid[:, :, 1] = 0.5
+            grid[:, :, 2] = 0.5
+        else:
             for reward in self.reward_pos:
                 grid[reward[0], reward[1], 0] = 0.5
                 grid[reward[0], reward[1], 1] = 0.5
@@ -154,8 +216,7 @@ class SimpleGrid(object):
             grid[block[0], block[1], 0] = 0
             grid[block[0], block[1], 1] = 0
 
-
-        for goal in self.goal_pos : 
+        for goal in self.goal_pos:
             grid[goal[0], goal[1], 1] = 1
             grid[goal[0], goal[1], 0] = 0
             grid[goal[0], goal[1], 2] = 0
@@ -164,23 +225,20 @@ class SimpleGrid(object):
         grid[state[0], state[1], 1] = 0
         grid[state[0], state[1], 2] = 0
 
-
         return grid
-
-
 
     def move_agent(self, direction):
         new_pos = self.agent_pos + direction
         if self.check_target(new_pos):
             self.agent_pos = list(new_pos)
-            
+
     def simulate(self, action):
         agent_old_pos = self.agent_pos
         reward = self.step(action)
         state = self.state
         self.agent_pos = agent_old_pos
         return state
-        
+
     def check_target(self, target):
         x_check = target[0] > -1 and target[0] < self.grid_size
         y_check = target[1] > -1 and target[1] < self.grid_size
@@ -189,7 +247,7 @@ class SimpleGrid(object):
             return True
         else:
             return False
-        
+
     @property
     def observation(self):
         if self.obs_mode == "onehot":
@@ -197,7 +255,7 @@ class SimpleGrid(object):
         if self.obs_mode == "twohot":
             return self.twohot(self.agent_pos, self.grid_size)
         if self.obs_mode == "geometric":
-            return (2 * np.array(self.agent_pos) / (self.grid_size-1)) - 1 
+            return (2 * np.array(self.agent_pos) / (self.grid_size-1)) - 1
         if self.obs_mode == "visual":
             return env.grid
         if self.obs_mode == "index":
@@ -210,35 +268,36 @@ class SimpleGrid(object):
         # if self.obs_mode == "twohot":
         #     return self.twohot(self.goal_pos, self.grid_size)
         # if self.obs_mode == "geometric":
-        #     return (2 * np.array(self.goal_pos) / (self.grid_size-1)) - 1 
+        #     return (2 * np.array(self.goal_pos) / (self.grid_size-1)) - 1
         # if self.obs_mode == "visual":
         #     return env.grid
         if self.obs_mode == "index":
             returns = []
-            for goal in self.goal_pos : 
+            for goal in self.goal_pos:
                 returns.append(goal[0] * self.grid_size + goal[1])
             return returns
-        
+
     @property
     def all_positions(self):
-        all_positions = self.blocks + self.goal_pos + [self.agent_pos]+ self.reward_pos
+        all_positions = self.blocks + self.goal_pos + \
+            [self.agent_pos] + self.reward_pos
         return all_positions
-    
+
     def state_to_grid(self, state):
         vec_state = np.zeros([self.state_size])
         vec_state[state] = 1
         vec_state = np.reshape(vec_state, [self.grid_size, self.grid_size])
         return vec_state
-    
+
     def state_to_goal(self, state):
         return utils.onehot(state, self.state_size)
-    
+
     def state_to_point(self, state):
         a = self.state_to_grid(state)
-        b = np.where(a==1)
-        c = [b[0][0],b[1][0]]
+        b = np.where(a == 1)
+        c = [b[0][0], b[1][0]]
         return c
-    
+
     def state_to_obs(self, state):
         if self.obs_mode == "onehot":
             point = self.state_to_point(state)
@@ -248,28 +307,27 @@ class SimpleGrid(object):
             return self.twohot(point, self.grid_size)
         if self.obs_mode == "geometric":
             point = self.state_to_point(state)
-            return (2 * np.array(point) / (self.grid_size-1)) - 1 
+            return (2 * np.array(point) / (self.grid_size-1)) - 1
         if self.obs_mode == "visual":
             return self.state_to_grid(state)
         if self.obs_mode == "index":
             return state
-            
+
     def step(self, action):
         # 0 - Up
         # 1 - Down
         # 2 - Left
         # 3 - Right
-        move_array = np.array([0,0])
+        move_array = np.array([0, 0])
         if action == 2:
-            move_array = np.array([0,-1])
+            move_array = np.array([0, -1])
         if action == 3:
-            move_array = np.array([0,1])
+            move_array = np.array([0, 1])
         if action == 0:
-            move_array = np.array([-1,0])
+            move_array = np.array([-1, 0])
         if action == 1:
-            move_array = np.array([1,0])
+            move_array = np.array([1, 0])
         self.move_agent(move_array)
-
 
         if self.agent_pos in self.goal_pos:
             self.done = True
@@ -279,7 +337,6 @@ class SimpleGrid(object):
             return self.reward_max
         else:
             return self.reward_min
-
 
     def state_to_goal(self, state):
         return self.state_to_obs(state)
