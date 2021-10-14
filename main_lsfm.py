@@ -1,5 +1,5 @@
 
-from modules.post import global_loss_reg, losses_on_rewards_global, classif, plot_error, plot_classif_reward_error
+from modules.post import global_loss_reg, losses_on_rewards_global, classif, plot_error, plot_classif_reward_error, plot_data
 from modules.params import PARAM_ENV_LSFM, PARAM_AGENT_LSFM
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -167,14 +167,23 @@ def main(argv):
         if online:
 
             data_eigen = pd.DataFrame()
-            for eigen in [0, 32]:
+            for eigen in [0, 8]:
                 PARAM_AGENT_LSFM["eigenoption_number"] = eigen
 
+                dt_string = now.strftime("%Y-%m-%d_%Hh-%Mm-%Ss")
+
                 data, agent_LSFM, memory = experience_oneline_eigenoption(
-                    environment, PARAM_AGENT_LSFM,  eigenoption=True, file_save=folder_WORK)
+                    environment, PARAM_AGENT_LSFM,  eigenoption=True, file_save=folder_WORK+"/"+dt_string)
                 data["eigen_opt"] = eigen
 
                 data_eigen = pd.concat([data_eigen, data])
+
+                data_plot = data_eigen
+                data_plot["eigen"] = True
+                data_plot.loc[data_plot["eigen_opt"] == 0, "eigen"] = False
+                plot_data(
+                    data_eigen,
+                    datafile=folder_WORK+"/"+dt_string+"online_eigendiscovery.jpg")
 
             data_plot = data_eigen
             data_plot["eigen"] = True
@@ -203,29 +212,32 @@ def main(argv):
             # data_plot.loc[data_plot["eps_min"] == 1, "eigen"] = False
 
             print("data", data_plot)
+            dt_string = now.strftime("%Y-%m-%d_%Hh-%Mm-%Ss")
+            plot_data(data_plot, datafile=folder_WORK+"/" +
+                      dt_string+"online_eigendiscovery.jpg")
 
-            fig, axs = plt.subplots(2, 3, figsize=(25, 15))
+            # fig, axs = plt.subplots(2, 3, figsize=(25, 15))
 
-            # for option in options :
-            hue = "eigen_opt"
-            x = "cum_step"
-            style = "eigen"
+            # # for option in options :
+            # hue = "eigen_opt"
+            # x = "cum_step"
+            # style = "eigen"
 
-            sns.lineplot(x=x, y="Avg_loss",  hue=hue,
-                         style=style, data=data_plot, ax=axs[0, 0])
-            sns.lineplot(x=x, y="Avg_loss_r",  hue=hue,
-                         style=style, data=data_plot, ax=axs[0, 1])
-            sns.lineplot(x=x, y="Avg_loss_psi",  hue=hue,
-                         style=style, data=data_plot, ax=axs[0, 2])
-            sns.lineplot(x=x, y="Avg_loss_phip1",  hue=hue,
-                         style=style, data=data_plot, ax=axs[1, 0])
-            sns.lineplot(x=x, y="exploration_ratio",  hue=hue,
-                         style=style, data=data_plot, ax=axs[1, 1])
-            sns.lineplot(x=x, y="eigen_exploration",  hue=hue,
-                         style=style, data=data_plot, ax=axs[1, 2])
+            # sns.lineplot(x=x, y="Avg_loss",  hue=hue,
+            #              style=style, data=data_plot, ax=axs[0, 0])
+            # sns.lineplot(x=x, y="Avg_loss_r",  hue=hue,
+            #              style=style, data=data_plot, ax=axs[0, 1])
+            # sns.lineplot(x=x, y="Avg_loss_psi",  hue=hue,
+            #              style=style, data=data_plot, ax=axs[0, 2])
+            # sns.lineplot(x=x, y="Avg_loss_phip1",  hue=hue,
+            #              style=style, data=data_plot, ax=axs[1, 0])
+            # sns.lineplot(x=x, y="exploration_ratio",  hue=hue,
+            #              style=style, data=data_plot, ax=axs[1, 1])
+            # sns.lineplot(x=x, y="eigen_exploration",  hue=hue,
+            #              style=style, data=data_plot, ax=axs[1, 2])
 
-            plt.savefig(folder_WORK+"/"+dt_string+"online_eigendiscovery.jpg")
-            plt.close()
+            # plt.savefig(folder_WORK+"/"+dt_string+"online_eigendiscovery.jpg")
+            # plt.close()
 
             buffer_train_df = pd.DataFrame(memory._samples, columns=[
                 'observation',
