@@ -609,7 +609,6 @@ class AgentLSFM:
                         labelbottom=False)
 
     def plot_eigenvect(self, model_LSFM, file):
-
         n_eigen_value = self.eigenoption_number
 
         ncol = 5
