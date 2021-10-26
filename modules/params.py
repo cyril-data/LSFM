@@ -94,7 +94,7 @@ PARAM_ENV_LSFM = {
 
 
 # dimension du réseau :
-latent_dimension = 0
+latent_dimension = 300
 hidden_ratio = 1.
 
 # paramètre de l'agent
