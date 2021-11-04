@@ -106,9 +106,9 @@ def simu_online_eigen(environment, param_agent, eigenoption=True, file_save=""):
 
         state = environment.reset()
 
-        if agent_LSFM.dim_latent == 0:
-            agent_LSFM.plot_eigenvect(
-                model_LSFM, file_save + "_" + "eigenvect_" + str(i) + "_ep.png")
+        # if agent_LSFM.dim_latent == 0:
+        agent_LSFM.plot_eigenvect(
+            model_LSFM, file_save + "_" + "eigenvect_" + str(i) + "_ep.png")
 
         while True:
 

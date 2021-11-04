@@ -71,7 +71,6 @@ class AgentLSFM:
 
         self.fig, self.ax = plt.subplots()
 
-
 #         LSFM model for construction of a reward-predictive space representation
 #         LSFM must be train on policy independant of state
         layers_inputs = []
@@ -81,10 +80,16 @@ class AgentLSFM:
         if self.dim_latent == 0:
             layer_latent = input_state
         else:
-            x = layers.Dense(self.hidden_dim, activation='relu',
-                             name="hidden_latent")(input_state)
-            layer_latent = layers.Dense(
-                self.dim_latent, activation='relu', name="latent")(x)
+            if (self.hidden_dim):
+                x = layers.Dense(self.hidden_dim, activation='relu',
+                                 name="hidden_latent")(input_state)
+
+                x = layers.Dense(self.hidden_dim, activation='relu',
+                                 name="hidden_latent2")(x)
+            else:
+                x = input_state
+        layer_latent = layers.Dense(
+            self.dim_latent, activation='relu', name="latent")(x)
 
         layers_ouputs = {}
 
@@ -609,15 +614,22 @@ class AgentLSFM:
                         labelbottom=False)
 
     def plot_eigenvect(self, model_LSFM, file):
+
         n_eigen_value = self.eigenoption_number
 
         ncol = 5
-        nrow = int(n_eigen_value / ncol) + 2
+        nrow = int(n_eigen_value / ncol) + 1
 
         value, vect = self.eigen_decomp(model_LSFM)
 
         n = self._state_dim
         ngrid = int(n**0.5)
+
+        states = tf.map_fn(fn=lambda t: tf.reshape(keras.utils.to_categorical(t, num_classes=n), n),
+                           elems=tf.range(n), dtype=tf.float32)
+        phis = tf.map_fn(fn=lambda t: model_LSFM(tf.reshape(t, (1, -1)))["phi"],
+                         elems=states, dtype=tf.float32)
+        phis = tf.reshape(phis, (phis.shape[0], phis.shape[-1]))
 
         fig, axs = plt.subplots(
             nrow, ncol, figsize=(5*ncol, 5*ncol * nrow/ncol))
@@ -625,20 +637,24 @@ class AgentLSFM:
 
             grid_size = ngrid
 
-            visu_state = tf.reshape(vect[idx], (ngrid, ngrid))
+            visu_state = tf.reshape(tf.matmul(tf.reshape(
+                vect[idx], (1, -1)), tf.transpose(phis))[0], (ngrid, ngrid))
 
             axs[idx//ncol, idx % ncol].imshow(visu_state, aspect="auto")
 
             axs[idx//ncol, idx %
-                ncol].set_xticks(tf.range(-.5, grid_size - 1, 1), minor=True)
+                ncol].set_xticks(np.arange(-.5, grid_size - 1, 1), minor=True)
             axs[idx//ncol, idx %
-                ncol].set_yticks(tf.range(-.5, grid_size - 1, 1), minor=True)
+                ncol].set_yticks(np.arange(-.5, grid_size - 1, 1), minor=True)
             axs[idx//ncol, idx %
                 ncol].grid(which='both', color='w', linestyle='-', linewidth=1.5)
             axs[idx//ncol, idx % ncol].tick_params(left=False,
                                                    bottom=False,
                                                    labelleft=False,
                                                    labelbottom=False)
+
+
+#             self.visu_grid(tf.reshape(vect[ idx ], (ngrid, ngrid)) ,ngrid, axs[idx//ncol,idx%ncol])
 
         fig.savefig(file)
 

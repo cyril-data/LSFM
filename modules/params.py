@@ -94,7 +94,7 @@ PARAM_ENV_LSFM = {
 
 
 # dimension du réseau :
-latent_dimension = 300
+latent_dimension = 100
 hidden_ratio = 1.
 
 # paramètre de l'agent
@@ -137,7 +137,7 @@ PARAM_AGENT_LSFM = {
     "train_on_Q_latent": False,
     "model_Q_Lin": False,
     "train": True,
-    "run": 5,
+    "run": 4,
     "render": False,
     "reward_parser": [-1.5, -0.5, 0.5, 1.5],
     "SMOTE_ratio": 0.,

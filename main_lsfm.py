@@ -167,23 +167,34 @@ def main(argv):
         if online:
 
             data_eigen = pd.DataFrame()
-            for eigen in [0, 8]:
-                PARAM_AGENT_LSFM["eigenoption_number"] = eigen
+            for latent_dim in [300]:
+                PARAM_AGENT_LSFM["latent_space"] = latent_dim
+                for eigen in [5]:
+                    PARAM_AGENT_LSFM["eigenoption_number"] = eigen
 
-                dt_string = now.strftime("%Y-%m-%d_%Hh-%Mm-%Ss")
+                    dt_string = now.strftime("%Y-%m-%d_%Hh-%Mm-%Ss")
 
-                data, agent_LSFM, memory = experience_oneline_eigenoption(
-                    environment, PARAM_AGENT_LSFM,  eigenoption=True, file_save=folder_WORK+"/"+dt_string)
-                data["eigen_opt"] = eigen
+                    data, agent_LSFM, memory = experience_oneline_eigenoption(
+                        environment, PARAM_AGENT_LSFM,  eigenoption=True, file_save=folder_WORK+"/"+dt_string+"lat"+str(latent_dim))
+                    data["eigen_opt"] = eigen
+                    data["latent_space"] = latent_dim
 
-                data_eigen = pd.concat([data_eigen, data])
+                    data_eigen = pd.concat([data_eigen, data])
 
-                data_plot = data_eigen
-                data_plot["eigen"] = True
-                data_plot.loc[data_plot["eigen_opt"] == 0, "eigen"] = False
-                plot_data(
-                    data_eigen,
-                    datafile=folder_WORK+"/"+dt_string+"online_eigendiscovery.jpg")
+                    data_plot = data_eigen
+                    data_plot["eigen"] = True
+                    data_plot.loc[data_plot["eigen_opt"] == 0, "eigen"] = False
+                    plot_data(
+                        data_eigen,
+                        datafile=folder_WORK+"/"+dt_string+"online_eigendiscovery.jpg")
+
+                    data_plot = data_eigen
+                    data_plot["eigen"] = True
+                    data_plot.loc[data_plot["eigen_opt"] == 0, "eigen"] = False
+                    data_plot.to_csv(folder_WORK+"/"+dt_string + "_data.csv")
+                    dt_string = now.strftime("%Y-%m-%d_%Hh-%Mm-%Ss")
+                    plot_data(data_plot, datafile=folder_WORK+"/" +
+                              dt_string+"online_eigendiscovery.jpg")
 
             data_plot = data_eigen
             data_plot["eigen"] = True
