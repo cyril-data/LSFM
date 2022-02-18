@@ -1,38 +1,18 @@
 from tensorflow import keras
 
-# ENV_NAME = "SimpleGrid"
-# PARAM_ENV = {
-#     "agent_pos":[0, 0], 
-#     "goal_pos":[[5,0] ],
-#     "reward_minmax":[-1.,0.],
-#     "reward_user_defined":True,
-#     "reward_pos":[[0, 0],[0, 1],[0, 2],[0, 3],[0, 4],[0, 5], 
-#                   [1, 0],[1, 1],[1, 2],[1, 3],[1, 4],[1, 5], 
-#                                               [2, 4],[2, 5], 
-#                                               [3, 4],[3, 5], 
-#                   [4, 0],[4, 1],[4, 2],[4, 3],[4, 4],[4, 5], 
-#                   [5, 0],[5, 1],[5, 2],[5, 3],[5, 4],[5, 5]],
-#     "grid_size" : 6,
-#     "pattern": "empty",
-#     "obs_mode":"index",
-# }
-
-
-
-
 # param_env = {
-#     "agent_pos":[0, 0], 
+#     "agent_pos":[0, 0],
 #     "goal_pos":[[9,0] ],
 #     "reward_minmax":[-1.,1.],
-#     "reward_pos":[[0, 0],[0, 1],[0, 2],[0, 3],[0, 4],[0, 5],[0, 6],[0, 7],[0, 8],[0, 9], 
-#                   [1, 0],[1, 1],[1, 2],[1, 3],[1, 4],[1, 5],[1, 6],[1, 7],[1, 8],[1, 9], 
-#                                                             [2, 6],[2, 7],[2, 8],[2, 9], 
-#                                                             [3, 6],[3, 7],[3, 8],[3, 9], 
-#                                                             [4, 6],[4, 7],[4, 8],[4, 9], 
-#                                                             [5, 6],[5, 7],[5, 8],[5, 9], 
-#                                                             [6, 6],[6, 7],[6, 8],[6, 9], 
-#                                                             [7, 6],[7, 7],[7, 8],[7, 9], 
-#                   [8, 0],[8, 1],[8, 2],[8, 3],[8, 4],[8, 5],[8, 6],[8, 7],[8, 8],[8, 9], 
+#     "reward_pos":[[0, 0],[0, 1],[0, 2],[0, 3],[0, 4],[0, 5],[0, 6],[0, 7],[0, 8],[0, 9],
+#                   [1, 0],[1, 1],[1, 2],[1, 3],[1, 4],[1, 5],[1, 6],[1, 7],[1, 8],[1, 9],
+#                                                             [2, 6],[2, 7],[2, 8],[2, 9],
+#                                                             [3, 6],[3, 7],[3, 8],[3, 9],
+#                                                             [4, 6],[4, 7],[4, 8],[4, 9],
+#                                                             [5, 6],[5, 7],[5, 8],[5, 9],
+#                                                             [6, 6],[6, 7],[6, 8],[6, 9],
+#                                                             [7, 6],[7, 7],[7, 8],[7, 9],
+#                   [8, 0],[8, 1],[8, 2],[8, 3],[8, 4],[8, 5],[8, 6],[8, 7],[8, 8],[8, 9],
 #                   [9, 0],[9, 1],[9, 2],[9, 3],[9, 4],[9, 5],[9, 6],[9, 7],[9, 8],[9, 9]],
 #     "grid_size" : 10,
 #     "pattern": "empty",
@@ -42,7 +22,7 @@ from tensorflow import keras
 # }
 
 # param_env = {
-#     "agent_pos":[0, 0], 
+#     "agent_pos":[0, 0],
 #     "goal_pos":[[10,0] ],
 #     "reward_minmax":[-1.,0.],
 #     "reward_user_defined":True,
@@ -64,80 +44,107 @@ from tensorflow import keras
 #     "obs_mode":"index",
 # }
 
+# ENV_NAME = "SimpleGrid"
+# PARAM_ENV_LSFM = {
+#     "agent_pos":[0, 0],
+#     "goal_pos":[[5,0] ],
+#     "reward_minmax":[-1.,0.],
+#     "reward_user_defined":True,
+#     "reward_pos":[[0, 0],[0, 1],[0, 2],[0, 3],[0, 4],[0, 5],
+#                   [1, 0],[1, 1],[1, 2],[1, 3],[1, 4],[1, 5],
+#                                               [2, 4],[2, 5],
+#                                               [3, 4],[3, 5],
+#                   [4, 0],[4, 1],[4, 2],[4, 3],[4, 4],[4, 5],
+#                   [5, 0],[5, 1],[5, 2],[5, 3],[5, 4],[5, 5]],
+#     "grid_size" : 6,
+#     "pattern": "empty",
+#     "obs_mode":"index",
+# }
+
+ENV_NAME = "SimpleGrid"
+# PARAM_ENV_LSFM = {
+#     "agent_pos":[0, 0],
+#     "goal_pos":[[5,0] ],
+#     "reward_pos": [[5,0] ],
+#     "grid_size" : 6,
+#     "reward_minmax":[0.,0.],
+#     "reward_user_defined":False,
+#     "pattern":"empty",
+#     "obs_mode":"index",
+# }
 
 
-
-ENV_NAME = "custom"
-PARAM_ENV = {
-    "action_space" : 88, 
-    "state_dim"  : 324
+PARAM_ENV_LSFM = {
+    "agent_pos": [0, 0],
+    "goal_pos": [],
+    "reward_minmax": [0., 0.],
+    "reward_user_defined": False,
+    "reward_pos": [],
+    "grid_size": 23,
+    "pattern": "sixteen_rooms",
+    "obs_mode": "index",
 }
 
 
+# ENV_NAME = "custom"
+# PARAM_ENV_LSFM = {
+#     "action_space" : 88,
+#     "state_dim"  : 324
+# }
 
-# dimension du réseau : 
-latent_dimension = 250
+
+# dimension du réseau :
+latent_dimension = 100
 hidden_ratio = 1.
 
-# paramètre de l'agent 
-PARAM_AGENT = {
+# paramètre de l'agent
+PARAM_AGENT_LSFM = {
     "gamma": 0.90,
     "optimizer_LSFM": keras.optimizers.Adam(),
     "optimizer_Q": keras.optimizers.Adam(),
-    "alpha_r" : 1.,
-    "alpha_N" : 0.1,
-    "alpha_psi" : 0.01,
+    "alpha_r": 1.,
+    "alpha_N": 0.1,
+    "alpha_psi": 0.01,
+    "alpha_phi": 0.01,
     "policy": {
-        "type": ["eps-greedy", "exponantial"],
-        "eps-greedy": {
-            "exponantial": {
-                "eps_max": 1.,
-                "eps_min": 0.01,
-                "lambda": 0.0002
-            },
-            "constant": {
-                "eps": 0.01
-            }
-        }
+        "type": ["fix_random_option"]
     },
-    "memory" : 500000,
+    # "policy": {
+    #     "type": ["eps-greedy", "exponantial"],
+    #     "eps-greedy": {
+    #         "exponantial": {
+    #             "eps_max": 1.,
+    #             "eps_min": 0.01,
+    #             "lambda": 0.0002
+    #         },
+    #         "constant": {
+    #             "eps": 0.01
+    #         }
+    #     }
+    # },
+    "memory": 500000,
     "latent_space": latent_dimension,
     "hidden_dim_ratio": hidden_ratio,
-    "num_episodes" : 10,
-    "num_steps" : 10,
-    "batch_size" : 32,
-    "RANDOM_REWARD_STD" : -1.0, 
-    "double_model" : False,
+    "num_episodes": 150,
+    "steps_max_episode": 200,
+    "num_steps": 1,
+    "batch_size": 32,
+    "RANDOM_REWARD_STD": -1.0,
+    "double_model": False,
     "tau": 0.08,
-    "filter_done" : True,
-    "train_LSFM" : True,
+    "filter_done": True,
+    "train_LSFM": True,
     "train_on_Q_latent": False,
     "model_Q_Lin": False,
-    "train" : True,
-    "avg_loss_phisp1" : False,
-    "run" : 1,
+    "train": True,
+    "run": 4,
     "render": False,
-    "avg_loss_phisp1" : 1000,
+    "reward_parser": [-1.5, -0.5, 0.5, 1.5],
+    "SMOTE_ratio": 0.,
+    "max_SF_cluster": 20,
+    "max_r_cluster": 10,
+    "eigenoption_number": 16,
+    "eigen_exploration": 0.5,
+    "start_eigenoption": 10,
+    "discoverNegation": True
 }
-
-
-
-
-
-
-#   actions_down = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-# for i in range(10) : 
-#     action = actions_down[i]
-#     next_state, reward, done, info = env.step(action)
-
-#     print("action", action)
-#     print(" 0 - Up  /  1 - Down  /  2 - Left  / 3 - Right")
-# #     print("next_state", next_state)
-#     print("reward", reward)
-#     print("done", done)
-#     env.render()
-    
-#     state = next_state
-
-
-
