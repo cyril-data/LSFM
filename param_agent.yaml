@@ -1,0 +1,49 @@
+# ----------------------
+# Paramètres de l'agent
+
+PARAM_AGENT_LSFM:
+  gamma: 0.90
+  # optimizer_LSFM: keras.optimizers.Adam()
+  # optimizer_Q: keras.optimizers.Adam()
+  alpha_r: 1.0
+  alpha_N: 0.1
+  alpha_psi: 0.01
+  alpha_phi: 0.01
+  policy:
+    type: [fix_random_option]
+
+  # policy:
+  #   type: [eps-greedy, exponantial]
+  #   eps-greedy:
+  #     exponantial:
+  #       eps_max: 1.,
+  #       eps_min: 0.01,
+  #       lambda: 0.0002
+  #     constant:
+  #         eps: 0.01
+
+  memory: 500000
+  latent_space: 100
+  hidden_dim_ratio: 1.0
+  num_episodes: 150
+  steps_max_episode: 200
+  num_steps: 1
+  batch_size: 32
+  RANDOM_REWARD_STD: -1.0
+  double_model: False
+  tau: 0.08
+  filter_done: True
+  train_LSFM: True
+  train_on_Q_latent: False
+  model_Q_Lin: False
+  train: True
+  run: 4
+  render: False
+  reward_parser: [-1.5, -0.5, 0.5, 1.5]
+  SMOTE_ratio: 0.0
+  max_SF_cluster: 20
+  max_r_cluster: 10
+  eigenoption_number: 16
+  eigen_exploration: 0.5
+  start_eigenoption: 10
+  discoverNegation: True

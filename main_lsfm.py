@@ -2,6 +2,7 @@ import getopt
 import os
 import sys
 from datetime import datetime
+import yaml
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,7 +29,8 @@ from modules.memory import (
     expand_list_for_SMOTE,
     zeros_columns,
 )
-from modules.params import PARAM_AGENT_LSFM, PARAM_ENV_LSFM
+
+# from modules.params import PARAM_AGENT_LSFM, PARAM_ENV_LSFM
 from modules.post import (
     classif,
     global_loss_reg,
@@ -38,6 +40,10 @@ from modules.post import (
     plot_error,
 )
 
+
+from pathlib import Path
+import glob
+
 sys.path.append("/".join(os.getcwd().split("/")[:-1]))
 
 import argparse
@@ -46,15 +52,32 @@ sns.set()
 
 
 # Online training on simple environnement :
-# python main_lsfm.py -e SimpleGrid -o True train
+# python main_lsfm.py --o True --t train
 
 # Offline training on simple environnement on buffer :
-# python main_lsfm.py -e SimpleGrid -b memory_maze_word.csv -o False train
+# python main_lsfm.py --e SimpleGrid --b memory_maze_word.csv --o False --t train
 # python main_lsfm.py -e custom -b memory_Ubi_0.5.csv -o False train
 
 # Test on buffer with model :
 # python main_lsfm.py -e SimpleGrid -b memory_maze_word.csv -m LSFM_Ma_classif_offline test
 # python main_lsfm.py -e custom -b memory_Ubi_0.5.csv -m LSFM250_2021-07-15_09h-12m-53s test
+
+
+def check_file(file):
+    # Search/download file (if necessary) and return path
+    file = str(file)  # convert to str()
+    if Path(file).is_file() or file == "":  # exists
+        return file
+    else:
+        return None
+
+    # else:  # search
+    #     files = glob.glob("./**/" + file, recursive=True)  # find file
+    #     assert len(files), f"File not found: {file}"  # assert file was found
+    #     assert (
+    #         len(files) == 1
+    #     ), f"Multiple files match '{file}', specify exact path: {files}"  # assert unique
+    #     return files[0]  # return file
 
 
 def main(opt):
@@ -88,6 +111,15 @@ def main(opt):
     now = datetime.now()
     dt_string = now.strftime("%Y-%m-%d_%Hh-%Mm-%Ss")
     fold_dir = "RESULTS"
+
+    if opt.env:
+        PARAM_ENV_LSFM = opt.env["PARAM_ENV_LSFM"]
+        ENV_NAME = opt.env["ENV_NAME"]
+    # from modules.params import PARAM_AGENT_LSFM, PARAM_ENV_LSFM
+
+    if opt.agent:
+        PARAM_AGENT_LSFM = opt.agent["PARAM_AGENT_LSFM"]
+
     fold_result = "/" + str(PARAM_AGENT_LSFM["latent_space"]) + "latDim_" + dt_string
 
     if opt.n:
@@ -176,20 +208,19 @@ def main(opt):
             id_train = len(buffer_train_df)
             print("SMOTE 6", datetime.now() - now)
 
-    if opt.e:
-        # Environnement Mae 2D : SimpleGrid
-        if opt.e == "SimpleGrid":
-            env_name = "SimpleGrid"
-            environment = custom_env(env_name, PARAM_ENV_LSFM)
-            state = environment.reset()
-            environment.render()
-        if opt.e == "custom":
-            env_name = "custom"
-            environment = custom_env(
-                "custom",
-                action_dim=PARAM_ENV_LSFM["action_space"],
-                state_dim=PARAM_ENV_LSFM["state_dim"],
-            )
+    # Environnement Mae 2D : SimpleGrid
+    if ENV_NAME == "SimpleGrid":
+        env_name = "SimpleGrid"
+        environment = custom_env(env_name, PARAM_ENV_LSFM)
+        state = environment.reset()
+        environment.render()
+    if ENV_NAME == "custom":
+        env_name = "custom"
+        environment = custom_env(
+            "custom",
+            action_dim=PARAM_ENV_LSFM["action_space"],
+            state_dim=PARAM_ENV_LSFM["state_dim"],
+        )
 
     if opt.m:
         save_model_path = fold_dir + "/" + opt.m + "/agent_LSFM_model"
@@ -574,10 +605,16 @@ if __name__ == "__main__":
     # python main_lsfm.py -e SimpleGrid -o True train
 
     # parser train
-    parser.add_argument("--t", type=str, default="train", help="train or test")
+
     parser.add_argument(
-        "--e", type=str, default="SimpleGrid", help="Define environnnement "
+        "--env", type=str, default="param_env.yaml", help="params to define environment"
     )
+
+    parser.add_argument(
+        "--agent", type=str, default="param_agent.yaml", help="params to define agent"
+    )
+
+    parser.add_argument("--t", type=str, default="train", help="train or test")
     parser.add_argument("--b", type=str, help="Offline buffer for training ")
     parser.add_argument("--m", type=str, help="Model for training ")
     parser.add_argument("--o", type=str, help="True : online, False : offline ")
@@ -586,5 +623,80 @@ if __name__ == "__main__":
     parser.add_argument("--s", type=float, help="smote ratio ")
 
     opt = parser.parse_args()
+
+    if check_file(opt.env):
+        with open(opt.env) as f:
+            optyaml = yaml.safe_load(f)  # load hyps
+            opt.env = optyaml
+    else:
+        opt.env = {
+            "ENV_NAME": "SimpleGrid",
+            "PARAM_ENV_LSFM": {
+                "agent_pos": [0, 0],
+                "goal_pos": [[5, 0]],
+                "reward_pos": [[5, 0]],
+                "grid_size": 6,
+                "reward_minmax": [0.0, 0.0],
+                "reward_user_defined": False,
+                "pattern": "empty",
+                "obs_mode": "index",
+            },
+        }
+
+    if check_file(opt.agent):
+        with open(opt.agent) as f:
+            optyaml = yaml.safe_load(f)  # load hyps
+            opt.agent = optyaml
+    else:
+        opt.agent = {
+            "PARAM_ENV_LSFM": {
+                "gamma": 0.90,
+                # "optimizer_LSFM": keras.optimizers.Adam(),
+                # "optimizer_Q": keras.optimizers.Adam(),
+                "alpha_r": 1.0,
+                "alpha_N": 0.1,
+                "alpha_psi": 0.01,
+                "alpha_phi": 0.01,
+                "policy": {"type": ["fix_random_option"]},
+                # "policy": {
+                #     "type": ["eps-greedy", "exponantial"],
+                #     "eps-greedy": {
+                #         "exponantial": {
+                #             "eps_max": 1.,
+                #             "eps_min": 0.01,
+                #             "lambda": 0.0002
+                #         },
+                #         "constant": {
+                #             "eps": 0.01
+                #         }
+                #     }
+                # },
+                "memory": 500000,
+                "latent_space": 100,
+                "hidden_dim_ratio": 1.0,
+                "num_episodes": 150,
+                "steps_max_episode": 200,
+                "num_steps": 1,
+                "batch_size": 32,
+                "RANDOM_REWARD_STD": -1.0,
+                "double_model": False,
+                "tau": 0.08,
+                "filter_done": True,
+                "train_LSFM": True,
+                "train_on_Q_latent": False,
+                "model_Q_Lin": False,
+                "train": True,
+                "run": 4,
+                "render": False,
+                "reward_parser": [-1.5, -0.5, 0.5, 1.5],
+                "SMOTE_ratio": 0.0,
+                "max_SF_cluster": 20,
+                "max_r_cluster": 10,
+                "eigenoption_number": 16,
+                "eigen_exploration": 0.5,
+                "start_eigenoption": 10,
+                "discoverNegation": True,
+            }
+        }
 
     main(opt)

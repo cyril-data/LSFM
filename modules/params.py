@@ -62,28 +62,28 @@ from tensorflow import keras
 # }
 
 ENV_NAME = "SimpleGrid"
-# PARAM_ENV_LSFM = {
-#     "agent_pos":[0, 0],
-#     "goal_pos":[[5,0] ],
-#     "reward_pos": [[5,0] ],
-#     "grid_size" : 6,
-#     "reward_minmax":[0.,0.],
-#     "reward_user_defined":False,
-#     "pattern":"empty",
-#     "obs_mode":"index",
-# }
-
-
 PARAM_ENV_LSFM = {
     "agent_pos": [0, 0],
-    "goal_pos": [],
-    "reward_minmax": [0., 0.],
+    "goal_pos": [[5, 0]],
+    "reward_pos": [[5, 0]],
+    "grid_size": 6,
+    "reward_minmax": [0.0, 0.0],
     "reward_user_defined": False,
-    "reward_pos": [],
-    "grid_size": 23,
-    "pattern": "sixteen_rooms",
+    "pattern": "empty",
     "obs_mode": "index",
 }
+
+
+# PARAM_ENV_LSFM = {
+#     "agent_pos": [0, 0],
+#     "goal_pos": [],
+#     "reward_minmax": [0., 0.],
+#     "reward_user_defined": False,
+#     "reward_pos": [],
+#     "grid_size": 23,
+#     "pattern": "sixteen_rooms",
+#     "obs_mode": "index",
+# }
 
 
 # ENV_NAME = "custom"
@@ -93,22 +93,20 @@ PARAM_ENV_LSFM = {
 # }
 
 
-# dimension du réseau :
-latent_dimension = 100
-hidden_ratio = 1.
+# # dimension du réseau :
+# latent_dimension = 100
+# hidden_ratio = 1.0
 
 # paramètre de l'agent
 PARAM_AGENT_LSFM = {
     "gamma": 0.90,
     "optimizer_LSFM": keras.optimizers.Adam(),
     "optimizer_Q": keras.optimizers.Adam(),
-    "alpha_r": 1.,
+    "alpha_r": 1.0,
     "alpha_N": 0.1,
     "alpha_psi": 0.01,
     "alpha_phi": 0.01,
-    "policy": {
-        "type": ["fix_random_option"]
-    },
+    "policy": {"type": ["fix_random_option"]},
     # "policy": {
     #     "type": ["eps-greedy", "exponantial"],
     #     "eps-greedy": {
@@ -123,8 +121,8 @@ PARAM_AGENT_LSFM = {
     #     }
     # },
     "memory": 500000,
-    "latent_space": latent_dimension,
-    "hidden_dim_ratio": hidden_ratio,
+    "latent_space": 100,
+    "hidden_dim_ratio": 1.0,
     "num_episodes": 150,
     "steps_max_episode": 200,
     "num_steps": 1,
@@ -140,11 +138,11 @@ PARAM_AGENT_LSFM = {
     "run": 4,
     "render": False,
     "reward_parser": [-1.5, -0.5, 0.5, 1.5],
-    "SMOTE_ratio": 0.,
+    "SMOTE_ratio": 0.0,
     "max_SF_cluster": 20,
     "max_r_cluster": 10,
     "eigenoption_number": 16,
     "eigen_exploration": 0.5,
     "start_eigenoption": 10,
-    "discoverNegation": True
+    "discoverNegation": True,
 }
