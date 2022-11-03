@@ -1,0 +1,3 @@
+# dimension du réseau :
+latent_dimension: 100
+hidden_ratio: 1.0
